@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { Card, DemoBadge } from "../components/ui";
 import { complaintRows, gapRows, yourReportRows, type TrackerRow } from "../../services/tracker";
 import { useReports } from "../../services/reportStore";
-import { daysSince, formatDay } from "../../utils/dates";
+import { daysSince, formatDay, todayISO } from "../../utils/dates";
 import { formatMonth } from "../../utils/months";
 
 const STATUS_STYLE: Record<string, string> = {
@@ -76,13 +76,13 @@ const SHOW_FIRST = 6;
 
 export default function Tracker() {
   const { stats, locations } = useData();
-  const unmonitored = useMemo(() => gapRows(locations, stats), []);
+  const unmonitored = useMemo(() => gapRows(locations, stats), [locations, stats]);
   const mine = useReports();
   const yours = useMemo(() => yourReportRows(mine), [mine]);
   const reports = useMemo(() => complaintRows(), []);
   const [all, setAll] = useState(false);
   const shown = all ? unmonitored : unmonitored.slice(0, SHOW_FIRST);
-  const today = formatDay(new Date().toISOString().slice(0, 10));
+  const today = formatDay(todayISO());
 
   return (
     <div className="space-y-6">
