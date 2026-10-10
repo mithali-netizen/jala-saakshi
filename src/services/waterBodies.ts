@@ -1,11 +1,8 @@
-import { DODDAGUBBI } from './doddagubbi';
-
 /**
- * Water bodies that are NOT in the KSPCB monthly river reports.
+ * A water body with no KSPCB monitoring point.
  *
- * Only entries with a real outline or coordinates belong here. Our seeded watchlist count
- * (src/demo/watchlist.ts) is deliberately not turned into map pins: we do not have real
- * coordinates for those lakes and will not invent them.
+ * The full set now comes from OpenStreetMap via services/lakes.ts; this type is what the
+ * featured-lake detail panel takes, so a lake and a hand-drawn polygon can both fill it.
  */
 export interface WaterBody {
   id: string;
@@ -17,14 +14,3 @@ export interface WaterBody {
   /** Why it is on this layer. */
   status: string;
 }
-
-export const UNMONITORED_WATER_BODIES: WaterBody[] = [
-  {
-    id: DODDAGUBBI.id,
-    name: DODDAGUBBI.name,
-    lat: DODDAGUBBI.lat,
-    lng: DODDAGUBBI.lng,
-    outline: DODDAGUBBI.outline,
-    status: "Not in KSPCB's monthly reports",
-  },
-];

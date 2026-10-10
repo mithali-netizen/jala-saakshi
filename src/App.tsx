@@ -8,7 +8,7 @@ import { StationPanel } from './components/StationPanel/StationPanel';
 import { SummaryStrip } from './components/Summary/SummaryStrip';
 import { KpiRow, type Focus } from './components/Dashboard/KpiRow';
 import { WaterBodyPanel } from './components/Detail/WaterBodyPanel';
-import { UNMONITORED_WATER_BODIES } from './services/waterBodies';
+import { LakePanel } from './components/Detail/LakePanel';
 import { complaintRows, openComplaints } from './services/tracker';
 import { APP_NAME, APP_TAGLINE } from './brand';
 
@@ -18,17 +18,19 @@ const Skeleton: React.FC<{ className: string }> = ({ className }) => (
   <div className={`animate-pulse rounded-2xl bg-slate-200/70 ${className}`} />
 );
 
-/** Karnataka, and the Bengaluru corner where the featured lake sits. */
+/** Karnataka, the Bengaluru district, and a close view where individual lakes read. */
 const KARNATAKA = L.latLngBounds(L.latLng(11.5, 74.0), L.latLng(18.5, 78.6));
 const BENGALURU = L.latLngBounds(L.latLng(12.7, 77.2), L.latLng(13.35, 77.95));
+const LAKES_VIEW = L.latLngBounds(L.latLng(12.9, 77.55), L.latLng(13.11, 77.76));
 
 export const App: React.FC = () => {
-  const { locations: allLocations, months, stats, selectedMonth, setSelectedMonth, isLoading, error, reload } = useData();
+  const { locations: allLocations, months, stats, selectedMonth, setSelectedMonth, isLoading, error, reload, lakes } =
+    useData();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [riverFilter, setRiverFilter] = useState('all');
   const [focus, setFocus] = useState<Focus>('points');
-  const [showWaterBodies, setShowWaterBodies] = useState(true);
+  const [showLakes, setShowLakes] = useState(true);
 
   const rivers = useMemo(() => [...new Set(allLocations.map((l) => l.river))].sort(), [allLocations]);
 
@@ -45,26 +47,24 @@ export const App: React.FC = () => {
     () => locations.find((l) => l.id === selectedId) ?? null,
     [locations, selectedId],
   );
-  const selectedBody = useMemo(
-    () => UNMONITORED_WATER_BODIES.find((b) => b.id === selectedId) ?? null,
-    [selectedId],
-  );
-  const panelOpen = !!selectedLocation || !!selectedBody;
+  const selectedLake = useMemo(() => lakes?.find((l) => l.id === selectedId) ?? null, [lakes, selectedId]);
+  const panelOpen = !!selectedLocation || !!selectedLake;
 
   const complaints = useMemo(() => complaintRows(), []);
   const openCount = useMemo(() => openComplaints(complaints).length, [complaints]);
 
   // The gap layer is the point of the lakes and complaints views, so it leads there.
   const gapFocus = focus === 'lakes' || focus === 'complaints';
+  // Lakes are a few hundred metres across, so their view has to be close enough to read.
   const fitTo = useMemo(
-    () => (gapFocus || focus === 'bengaluru' ? BENGALURU : KARNATAKA),
+    () => (gapFocus ? LAKES_VIEW : focus === 'bengaluru' ? BENGALURU : KARNATAKA),
     [gapFocus, focus],
   );
 
   const handleFocus = (next: Focus) => {
     setFocus(next);
     setSelectedId(null);
-    if (next === 'lakes' || next === 'complaints' || next === 'bengaluru') setShowWaterBodies(true);
+    if (next === 'lakes' || next === 'complaints' || next === 'bengaluru') setShowLakes(true);
   };
 
   return (
@@ -194,9 +194,9 @@ export const App: React.FC = () => {
                   selectedId={selectedId}
                   onSelect={setSelectedId}
                   panelOpen={panelOpen}
-                  waterBodies={UNMONITORED_WATER_BODIES}
-                  showWaterBodies={showWaterBodies}
-                  onToggleWaterBodies={setShowWaterBodies}
+                  lakes={lakes}
+                  showLakes={showLakes}
+                  onToggleLakes={setShowLakes}
                   dimStations={gapFocus}
                   fitTo={fitTo}
                 />
@@ -211,9 +211,29 @@ export const App: React.FC = () => {
                           onClose={() => setSelectedId(null)}
                         />
                       ) : (
-                        selectedBody && (
-                          <WaterBodyPanel body={selectedBody} stats={stats} onClose={() => setSelectedId(null)} />
-                        )
+                        selectedLake &&
+                        (selectedLake.featured ? (
+                          <WaterBodyPanel
+                            body={{
+                              id: selectedLake.id,
+                              name: selectedLake.name,
+                              lat: selectedLake.lat,
+                              lng: selectedLake.lng,
+                              status: "Not in KSPCB's monthly river reports",
+                            }}
+                            stats={stats}
+                            onClose={() => setSelectedId(null)}
+                          />
+                        ) : (
+                          <LakePanel
+                            lake={selectedLake}
+                            locations={allLocations}
+                            onClose={() => setSelectedId(null)}
+                            onReport={(l) => {
+                              window.location.hash = `#/app/report?lake=${encodeURIComponent(l.id)}`;
+                            }}
+                          />
+                        ))
                       )}
                     </div>
                   </div>

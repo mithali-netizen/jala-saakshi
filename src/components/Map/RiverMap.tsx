@@ -7,7 +7,7 @@ import type { GeoJsonObject } from 'geojson';
 import { Maximize2 } from 'lucide-react';
 import { GEOJSON_URL, RIVERS_URL } from '../../config';
 import type { MonitoringLocation } from '../../utils/stations';
-import type { WaterBody } from '../../services/waterBodies';
+import { LAKES_ATTRIBUTION, type Lake } from '../../services/lakes';
 import { getClassConfig } from '../../utils/waterQuality';
 import { formatMonth } from '../../utils/months';
 
@@ -21,10 +21,10 @@ interface RiverMapProps {
   onSelect: (id: string) => void;
   /** Panel docked over the map; used to keep the selected pin out from under it. */
   panelOpen: boolean;
-  /** Water bodies with no KSPCB monitoring point, drawn as their own layer. */
-  waterBodies?: WaterBody[];
-  showWaterBodies?: boolean;
-  onToggleWaterBodies?: (next: boolean) => void;
+  /** Mapped Bengaluru lakes, drawn as their own layer. Null while the file loads. */
+  lakes?: Lake[] | null;
+  showLakes?: boolean;
+  onToggleLakes?: (next: boolean) => void;
   /** Dims the station pins so the gap layer reads clearly. */
   dimStations?: boolean;
   /** Fit the view to these bounds when they change. */
@@ -221,19 +221,31 @@ function StationsLayer({ locations, selectedMonth, selectedId, onSelect, panelOp
   return null;
 }
 
-// ─── Unmonitored water bodies ────────────────────────────────────────────────
+// ─── Lakes ───────────────────────────────────────────────────────────────────
+
+/** No reading: the same grey the legend uses for "No data". */
+const LAKE_STYLE: L.PathOptions = { color: '#475569', weight: 1, fillColor: '#64748b', fillOpacity: 0.45 };
+const LAKE_SELECTED: L.PathOptions = { color: '#0f766e', weight: 2.5, fillColor: '#0f766e', fillOpacity: 0.55 };
+/** The lake this project follows. */
+const LAKE_FEATURED: L.PathOptions = { color: '#be123c', weight: 2, fillColor: '#f43f5e', fillOpacity: 0.5 };
+
+const styleFor = (lake: Lake, selected: boolean): L.PathOptions =>
+  selected ? LAKE_SELECTED : lake.featured ? LAKE_FEATURED : LAKE_STYLE;
 
 /**
- * Drawn outside the marker cluster: these are the gap, so they must never be folded
- * into a station count bubble.
+ * Every mapped Bengaluru lake, drawn outside the marker cluster so they are never
+ * folded into a station count. None of them carries a reading in this series, and the
+ * layer says so on each one rather than leaving them blank.
  */
-function WaterBodiesLayer({
-  bodies,
+const LAKES_ATTRIBUTION_HTML = `Lakes: ${LAKES_ATTRIBUTION}`;
+
+function LakesLayer({
+  lakes,
   visible,
   selectedId,
   onSelect,
 }: {
-  bodies: WaterBody[];
+  lakes: Lake[] | null;
   visible: boolean;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -241,42 +253,70 @@ function WaterBodiesLayer({
   const map = useMap();
   const live = useRef({ onSelect });
   live.current = { onSelect };
+  const shapesRef = useRef(new Map<string, L.Polygon>());
 
   useEffect(() => {
-    if (!visible) return;
+    if (!visible || !lakes) return;
+    // Canvas keeps a few hundred polygons smooth; clicks still work.
+    const renderer = L.canvas({ padding: 0.3 });
     const group = L.layerGroup().addTo(map);
+    const shapes = shapesRef.current;
 
-    for (const body of bodies) {
-      const selected = body.id === selectedId;
-      if (body.outline) {
-        L.polygon(body.outline, {
-          color: '#be123c',
-          weight: selected ? 3 : 2,
-          fillColor: '#f43f5e',
-          fillOpacity: selected ? 0.45 : 0.3,
-        })
-          .on('click', () => live.current.onSelect(body.id))
-          .addTo(group);
-      }
-      L.marker([body.lat, body.lng], {
-        icon: L.divIcon({
-          className: 'wb-pin-wrap',
-          html: `<div class="wb-pin${selected ? ' is-selected' : ''}">
-                   <span class="wb-pin-dot"></span>${esc(body.name)}
-                   <small>${esc(body.status)}</small>
-                 </div>`,
-          iconSize: [0, 0],
-        }),
-        zIndexOffset: 1000,
-      })
-        .on('click', () => live.current.onSelect(body.id))
+    for (const lake of lakes) {
+      const shape = L.polygon(lake.rings, { renderer, ...styleFor(lake, lake.id === selectedId) })
+        .bindTooltip(
+          `<strong>${esc(lake.name)}</strong><br/>No reading in KSPCB's monthly river reports`,
+          { direction: 'top', sticky: true },
+        )
+        .on('click', () => live.current.onSelect(lake.id))
         .addTo(group);
+      shapes.set(lake.id, shape);
     }
 
+    // The lake geometry is OpenStreetMap's, so credit it while the layer is shown.
+    map.attributionControl.addAttribution(LAKES_ATTRIBUTION_HTML);
+
     return () => {
+      map.attributionControl.removeAttribution(LAKES_ATTRIBUTION_HTML);
       map.removeLayer(group);
+      shapes.clear();
     };
-  }, [bodies, visible, selectedId, map]);
+  }, [lakes, visible, map]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Restyle on selection rather than rebuilding 340 polygons.
+  useEffect(() => {
+    if (!lakes) return;
+    for (const lake of lakes) {
+      shapesRef.current.get(lake.id)?.setStyle(styleFor(lake, lake.id === selectedId));
+    }
+  }, [selectedId, lakes]);
+
+  return null;
+}
+
+/** Name label for the featured lake, so it is findable without hunting. */
+function FeaturedLakePin({ lake, visible, onSelect }: { lake: Lake | null; visible: boolean; onSelect: (id: string) => void }) {
+  const map = useMap();
+  const live = useRef({ onSelect });
+  live.current = { onSelect };
+
+  useEffect(() => {
+    if (!visible || !lake) return;
+    const marker = L.marker([lake.lat, lake.lng], {
+      icon: L.divIcon({
+        className: 'wb-pin-wrap',
+        html: `<div class="wb-pin"><span class="wb-pin-dot"></span>${esc(lake.name)}
+                 <small>no reading in KSPCB's monthly river reports</small></div>`,
+        iconSize: [0, 0],
+      }),
+      zIndexOffset: 1000,
+    })
+      .on('click', () => live.current.onSelect(lake.id))
+      .addTo(map);
+    return () => {
+      map.removeLayer(marker);
+    };
+  }, [lake, visible, map]);
 
   return null;
 }
@@ -286,7 +326,7 @@ function FitController({ bounds }: { bounds: L.LatLngBoundsExpression | null | u
   const map = useMap();
   useEffect(() => {
     if (!bounds) return;
-    map.flyToBounds(bounds, { padding: [48, 48], maxZoom: 11, duration: 0.6 });
+    map.flyToBounds(bounds, { padding: [32, 32], maxZoom: 14, duration: 0.6 });
   }, [bounds, map]);
   return null;
 }
@@ -356,10 +396,15 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
           />
         )}
         <StationsLayer {...props} />
-        <WaterBodiesLayer
-          bodies={props.waterBodies ?? []}
-          visible={props.showWaterBodies ?? false}
+        <LakesLayer
+          lakes={props.lakes ?? null}
+          visible={props.showLakes ?? false}
           selectedId={props.selectedId}
+          onSelect={props.onSelect}
+        />
+        <FeaturedLakePin
+          lake={props.lakes?.find((l) => l.featured) ?? null}
+          visible={props.showLakes ?? false}
           onSelect={props.onSelect}
         />
         <FitController bounds={props.fitTo} />
@@ -384,17 +429,20 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
           />
           River lines
         </label>
-        {props.waterBodies && props.waterBodies.length > 0 && (
-          <label className="inline-flex h-8 cursor-pointer select-none items-center gap-2 rounded-lg border border-rose-200 bg-white/95 px-2.5 text-xs font-medium text-rose-800 shadow-xs backdrop-blur">
-            <input
-              type="checkbox"
-              checked={props.showWaterBodies ?? false}
-              onChange={(e) => props.onToggleWaterBodies?.(e.target.checked)}
-              className="h-3.5 w-3.5 accent-rose-700"
-            />
-            Unmonitored water bodies ({props.waterBodies.length})
-          </label>
-        )}
+        <label
+          className={`inline-flex h-8 select-none items-center gap-2 rounded-lg border border-slate-300 bg-white/95 px-2.5 text-xs font-medium text-slate-700 shadow-xs backdrop-blur ${
+            props.lakes ? 'cursor-pointer' : 'cursor-wait opacity-60'
+          }`}
+        >
+          <input
+            type="checkbox"
+            checked={props.showLakes ?? false}
+            disabled={!props.lakes}
+            onChange={(e) => props.onToggleLakes?.(e.target.checked)}
+            className="h-3.5 w-3.5 accent-slate-700"
+          />
+          {props.lakes ? `Bengaluru lakes (${props.lakes.length})` : 'Loading lakes…'}
+        </label>
       </div>
 
       {/* Legend */}
