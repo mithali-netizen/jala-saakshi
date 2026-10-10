@@ -48,8 +48,11 @@ export const KpiRow: React.FC<KpiRowProps> = ({ stats, focus, onFocus, listed, s
     {
       key: 'lakes',
       value: String(stats.lakesInReports),
-      label: 'Lakes in KSPCB reports',
-      note: 'No station reads as a lake, kere or tank',
+      label: "Lakes in KSPCB's monthly river reports",
+      note:
+        stats.lakesMapped === null
+          ? 'None of the mapped Bengaluru lakes appears in this series'
+          : `None of the ${stats.lakesMapped} mapped Bengaluru lakes appears in this series`,
       alert: true,
     },
     {

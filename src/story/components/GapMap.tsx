@@ -53,8 +53,8 @@ export default function GapMap({ onReady }: { onReady?: (api: { karnataka: () =>
     L.polygon(DODDAGUBBI.outline, { color: "#b91c1c", weight: 2, fillColor: "#ef4444", fillOpacity: 0.35 }).addTo(map);
     L.marker([DODDAGUBBI.lat, DODDAGUBBI.lng], {
       icon: L.divIcon({
-        className: "j-pin-wrap",
-        html: `<div class="j-pin-dodda"><span></span>Doddagubbi Lake<small>not in KSPCB's monthly reports</small></div>`,
+        className: "wb-pin-wrap",
+        html: `<div class="wb-pin"><span class="wb-pin-dot"></span>Doddagubbi Lake<small>not in KSPCB's monthly river reports</small></div>`,
         iconSize: [0, 0],
       }),
       zIndexOffset: 1000,

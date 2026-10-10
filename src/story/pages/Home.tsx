@@ -25,7 +25,7 @@ export default function Home() {
         <p className="text-xs font-bold uppercase tracking-widest text-red-700">The monitoring gap</p>
         <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-ink sm:text-4xl">
           KSPCB's monthly river reports cover {stats.locations} monitoring points on {stats.rivers} rivers.{" "}
-          <span className="text-red-700">{stats.lakesInReports} are lakes.</span>
+          <span className="text-red-700">None of them is a lake.</span>
         </h1>
         <p className="mt-3 text-base leading-relaxed text-slate-700">
           Doddagubbi Lake in Bengaluru, where news coverage reports thousands of dead fish in early October 2026, is not
@@ -41,7 +41,16 @@ export default function Home() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat value={stats.locations} label="Monitoring points" note={`${stats.stationCodes} station codes over ${stats.months.length} monthly reports, ${formatMonth(stats.firstMonth)} to ${formatMonth(stats.lastMonth)}`} />
         <Stat value={stats.rivers} label="Rivers" note="Spelling variants across the PDFs merged" />
-        <Stat value={stats.lakesInReports} label="Lakes" note="No station name, river or stretch mentions a lake, kere or tank" tone="alert" />
+        <Stat
+          value={stats.lakesInReports}
+          label="Lakes in this series"
+          note={
+            stats.lakesMapped === null
+              ? 'No station name, river or stretch reads as a lake, kere or tank'
+              : `None of the ${stats.lakesMapped} mapped Bengaluru lakes appears in it`
+          }
+          tone="alert"
+        />
         <Stat
           value={stats.bengaluruStations}
           label="Stations in Bengaluru district"
@@ -63,6 +72,19 @@ export default function Home() {
           <span className="inline-flex items-center gap-1.5"><i className="inline-block h-2.5 w-4 rounded-sm border-2 border-red-700 bg-red-400/40" /> Doddagubbi Lake (outline from the team's lake polygon)</span>
           <span className="inline-flex items-center gap-1.5"><i className="inline-block w-4 border-t-2 border-dashed border-red-700" /> Distance to the nearest point</span>
         </div>
+      </Card>
+
+      <Card className="border-amber-200 bg-amber-50/40">
+        <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-ink">KSPCB does sample lakes</h2>
+          <SourceTag>Bangalore Mirror, Apr 2021</SourceTag>
+        </div>
+        <p className="text-sm leading-relaxed text-slate-700">
+          This finding is about one published series, not about whether lakes are ever tested. A 2021 ActionAid
+          analysis of <b>106 Bengaluru lakes</b> reported none in Class A or B, with nearly all samples
+          unsatisfactory. That work sits outside the monthly river reports this dashboard reads, which is why no lake
+          appears in the figures above.
+        </p>
       </Card>
 
       <div className="grid gap-5 lg:grid-cols-2">

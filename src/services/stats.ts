@@ -37,6 +37,10 @@ export interface Stats {
   rivers: number;
   /** Water bodies in the reports whose name, river or stretch reads as a lake/kere/tank. */
   lakesInReports: number;
+  /** Named lake polygons we map from OpenStreetMap; null until the file loads. */
+  lakesMapped: number | null;
+  /** ...of those, how many carry a reading in this series. The answer is the finding. */
+  lakesWithReading: number;
   /** Stations whose district reads Bengaluru. District is only filled in some reports. */
   bengaluruStations: number;
   /** ...of those, how many carry no reading in the report that names them. */
@@ -57,7 +61,11 @@ export interface Stats {
   };
 }
 
-export function computeStats(readings: WaterReading[], locations?: MonitoringLocation[]): Stats {
+export function computeStats(
+  readings: WaterReading[],
+  locations?: MonitoringLocation[],
+  lakesMapped: number | null = null,
+): Stats {
   const locs = locations ?? buildLocations(readings);
   const months = [...new Set(readings.map((r) => r.month))].sort();
 
@@ -87,6 +95,8 @@ export function computeStats(readings: WaterReading[], locations?: MonitoringLoc
     stationCodes: new Set(readings.map((r) => r.station_code)).size,
     rivers: new Set(readings.map((r) => canonicalRiver(r.river))).size,
     lakesInReports: lakeKeys.size,
+    lakesMapped,
+    lakesWithReading: 0,
     bengaluruStations: new Set(blr.map((r) => r.station_code)).size,
     bengaluruNoReading: new Set(blr.filter((r) => !hasValues(r)).map((r) => r.station_code)).size,
     districtMonths: [...new Set(readings.filter((r) => r.district).map((r) => r.month))].sort(),

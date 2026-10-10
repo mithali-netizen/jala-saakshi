@@ -139,7 +139,7 @@ function HomeScreen({ navigate }: { navigate: (screen: Screen) => void }) {
       <Card className="health-card">
         <div><p className="eyebrow light">Bengaluru lake health</p><div className="big-stat">{DEMO_WATCHED_LAKES} <span>{WATCHED_LAKES_LABEL}</span></div></div>
         <div className="health-dots"><span className="dot high" />{DEMO_WATCHLIST_RISK.high} High <span className="dot elevated" />{DEMO_WATCHLIST_RISK.elevated} Elevated <span className="dot low" />{DEMO_WATCHLIST_RISK.low} Low</div>
-        <p className="coverage-note">KSPCB publishes monthly readings for <strong>0</strong> lakes. This watchlist is our own.</p>
+        <p className="coverage-note">No lake appears in KSPCB's <strong>monthly river reports</strong>. This watchlist is our own.</p>
         <DemoTag />
       </Card>
       <SectionTitle action={<button className="text-button" onClick={() => navigate("map")}>View map <Icon name="arrow" className="size-4" /></button>}>Lake needing attention</SectionTitle>
@@ -325,7 +325,7 @@ function AuthorityDashboard({ navigate }: { navigate: (screen: Screen) => void }
         <Card><span className="metric-icon green"><Icon name="shield" /></span><div><p>Verified resolutions</p><strong>12</strong><small>Last 30 days</small></div></Card>
       </div>
       <div className="dashboard-grid">
-        <Card className="authority-map-card"><div className="panel-head"><div><h2>Lake risk map</h2><p>{DEMO_WATCHED_LAKES} {WATCHED_LAKES_LABEL} · Demo data · 0 in KSPCB reports</p></div><Button variant="secondary" icon="filter">Filters</Button></div><MapCanvas compact /><div className="map-legend"><span><i className="dot high" />High {DEMO_WATCHLIST_RISK.high}</span><span><i className="dot elevated" />Elevated {DEMO_WATCHLIST_RISK.elevated}</span><span><i className="dot low" />Low {DEMO_WATCHLIST_RISK.low}</span><button>View full map <Icon name="arrow" className="size-4" /></button></div></Card>
+        <Card className="authority-map-card"><div className="panel-head"><div><h2>Lake risk map</h2><p>{DEMO_WATCHED_LAKES} {WATCHED_LAKES_LABEL} · Demo data · none in KSPCB's monthly river reports</p></div><Button variant="secondary" icon="filter">Filters</Button></div><MapCanvas compact /><div className="map-legend"><span><i className="dot high" />High {DEMO_WATCHLIST_RISK.high}</span><span><i className="dot elevated" />Elevated {DEMO_WATCHLIST_RISK.elevated}</span><span><i className="dot low" />Low {DEMO_WATCHLIST_RISK.low}</span><button>View full map <Icon name="arrow" className="size-4" /></button></div></Card>
         <Card className="priority-card"><div className="panel-head"><div><h2>Priority case</h2><p>Highest current demo signal</p></div><Badge tone="high">High risk</Badge></div><div className="priority-image"><img src={LAKE_IMAGE} alt="Bellandur Lake" /><span>USER-SUBMITTED</span></div><h3>Possible surface froth</h3><p className="priority-location"><Icon name="location" className="size-4" /> Bellandur Lake · Eastern inlet</p><div className="freshness"><span><Icon name="users" />6 citizen reports</span><span><Icon name="clock" />18m old</span></div><Button className="full" onClick={() => navigate("incident")}>Open case <Icon name="arrow" /></Button></Card>
       </div>
       <Card className="queue-card"><div className="panel-head"><div><h2>Incident queue</h2><p>Prioritized by risk, recency, and report volume</p></div><div className="panel-actions"><Button variant="secondary" icon="filter">All statuses</Button><Button variant="secondary">Newest first</Button></div></div>
