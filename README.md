@@ -112,7 +112,11 @@ evslake/
 │   └── data/
 │       ├── readings.json           # Active runtime data (swap this!)
 │       ├── readings.sample.json    # Illustrative sample (do not delete)
-│       └── river.geojson           # River polyline (replace with WRIS geometry)
+│       ├── river.geojson           # Arkavathi river polyline (Karnataka monitoring)
+│       └── rivers-india.geojson    # National river network — 23,826 features, ~5 MB
+│                                   # (reduced from 54 MB original; backup kept outside repo)
+│                                   # Properties: rivname, state_al, ba_name only
+│                                   # Coordinates rounded to 5 dp (~1 m accuracy)
 ├── src/
 │   ├── components/
 │   │   ├── Map/
