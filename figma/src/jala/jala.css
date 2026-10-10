@@ -1,0 +1,24 @@
+/* Jala Saakshi: styles that are not Tailwind utilities. Uses the theme tokens from src/index.css. */
+a { color: inherit; }
+.j-pin-wrap { background: none; border: 0; }
+.j-pin-dodda {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  margin-top: -10px;
+  padding: 4px 8px;
+  border: 2px solid #b91c1c;
+  border-radius: 8px;
+  background: #fff;
+  color: #7f1d1d;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+}
+.j-pin-dodda small { display: block; font-size: 10px; font-weight: 600; color: #b91c1c; }
+.j-pin-dodda span {
+  position: absolute; left: 50%; bottom: -7px; width: 10px; height: 10px; background: #fff;
+  border-right: 2px solid #b91c1c; border-bottom: 2px solid #b91c1c; transform: translateX(-50%) rotate(45deg);
+}
+.leaflet-tooltip { font-size: 12px; }

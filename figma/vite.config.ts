@@ -34,6 +34,8 @@ react(),
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
       port: parseInt(process.env.PORT || '8443'),
       strictPort: true,
+      // The Jala Saakshi UI reads the shipping dataset at tiramisu/public/data/readings.json.
+      fs: { allow: ['..'] },
       watch: {
         ignored: [
           '**/.figma/**',
