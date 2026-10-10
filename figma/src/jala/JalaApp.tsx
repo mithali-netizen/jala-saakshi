@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import "./jala.css";
 import Home from "./pages/Home";
+import Tracker from "./pages/Tracker";
 
 type Route = "home" | "lake" | "tracker" | "explorer";
 
@@ -56,7 +57,8 @@ export default function JalaApp() {
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
         {route === "home" && <Home />}
-        {route !== "home" && <p className="text-sm text-muted">Coming in the next step.</p>}
+        {route === "tracker" && <Tracker />}
+        {(route === "lake" || route === "explorer") && <p className="text-sm text-muted">Coming in the next step.</p>}
       </main>
       <footer className="mx-auto max-w-6xl px-4 pb-8 text-xs text-muted sm:px-6">
         Source: KSPCB monthly water quality reports. Readings are point-in-time samples. Items marked Demo or News

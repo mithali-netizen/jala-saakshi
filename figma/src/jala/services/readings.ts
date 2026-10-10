@@ -102,10 +102,14 @@ export function buildLocations(readings: Reading[]): MonitoringLocation[] {
     const months = [...byMonth.keys()].sort();
     const latest = byMonth.get(months[months.length - 1])!;
     const river = canonicalRiver(latest.river);
+    // PDF extraction left some garbled names; the most common spelling at a point is the reliable one.
+    const counts = new Map<string, number>();
+    for (const r of rows) counts.set(r.station_name, (counts.get(r.station_name) ?? 0) + 1);
+    const modeName = [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0];
     const orders = rows.map((r) => r.river_order).filter((v): v is number => typeof v === "number");
     out.push({
       id,
-      name: `${river} at ${shortName(latest.station_name, latest.river)}`,
+      name: `${river} at ${shortName(modeName, latest.river)}`.replace(/[,.\s]+$/, ""),
       river,
       lat: latest.lat,
       lng: latest.lng,
