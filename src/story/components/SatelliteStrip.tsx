@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { formatDay } from "../services/readings";
+import { formatDay } from "../../utils/dates";
 
-const files = import.meta.glob("../assets/frames/*.png", { eager: true, query: "?url", import: "default" }) as Record<string, string>;
+const files = import.meta.glob("../../assets/frames/*.png", { eager: true, query: "?url", import: "default" }) as Record<string, string>;
 
 interface Frame {
   date: string;
@@ -32,6 +32,10 @@ const frames: Frame[] = Object.entries(files)
 const dayNum = (iso: string) => Date.UTC(+iso.slice(0, 4), +iso.slice(5, 7) - 1, +iso.slice(8, 10)) / 86_400_000;
 
 export default function SatelliteStrip({ eventDate }: { eventDate: string }) {
+  // No bundled frames (or none that passed the cloud check): say so rather than crash.
+  if (frames.length === 0) {
+    return <p className="text-xs text-muted">No cloud-free Sentinel-2 scenes are bundled for this lake.</p>;
+  }
   const first = frames[0].date;
   const last = frames[frames.length - 1].date;
   const bigGaps = useMemo(

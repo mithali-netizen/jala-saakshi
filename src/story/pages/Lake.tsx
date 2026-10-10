@@ -3,8 +3,9 @@ import RainChart from "../components/RainChart";
 import SatelliteStrip from "../components/SatelliteStrip";
 import ComplaintCard from "../components/ComplaintCard";
 import { Card, SourceTag } from "../components/ui";
-import { DO_LOW_MG_L, RAIN_TRIGGER_MM, getRainfall, rainRuleMet, type RainResult } from "../services/rainfall";
-import { DODDAGUBBI_NAME, FIRST_DEAD_FISH, formatDay } from "../services/readings";
+import { DO_LOW_MG_L, RAIN_TRIGGER_MM, getRainfall, rainRuleMet, type RainResult } from "../../services/rainfall";
+import { DODDAGUBBI, FIRST_DEAD_FISH } from "../../services/doddagubbi";
+import { formatDay } from "../../utils/dates";
 
 /** Dates as reported in news coverage (supplied by the team; not in the KSPCB dataset). */
 const HEAVY_RAIN_REPORTED = "2026-09-30";
@@ -137,7 +138,7 @@ export default function Lake() {
     <div className="space-y-5">
       <header className="max-w-3xl">
         <p className="text-xs font-bold uppercase tracking-widest text-red-700">Featured case</p>
-        <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{DODDAGUBBI_NAME}, Bengaluru</h1>
+        <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{DODDAGUBBI.name}, Bengaluru</h1>
         <p className="mt-2 text-sm leading-relaxed text-slate-700">
           What is known, from where. Items tagged <SourceTag>News coverage</SourceTag> were reported in the press and are not in
           the KSPCB dataset. Each section says what it can and cannot show.

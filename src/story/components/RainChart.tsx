@@ -1,5 +1,5 @@
-import { formatDay } from "../services/readings";
-import { RAIN_TRIGGER_MM, rainRuleMet, type RainDay } from "../services/rainfall";
+import { formatDay } from "../../utils/dates";
+import { RAIN_TRIGGER_MM, rainRuleMet, type RainDay } from "../../services/rainfall";
 
 export interface ChartEvent {
   date: string;

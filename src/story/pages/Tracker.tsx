@@ -1,9 +1,9 @@
+import { useData } from "../../context/DataContext";
 import { useMemo, useState } from "react";
 import { Card, DemoBadge } from "../components/ui";
-import { daysSince, formatDay, formatMonth, unmonitoredRows } from "../services/readings";
-import { facts, locations } from "../services/store";
-import { reportRows } from "../services/reports";
-import type { DaysRow } from "../types";
+import { complaintRows, gapRows, type TrackerRow } from "../../services/tracker";
+import { daysSince, formatDay } from "../../utils/dates";
+import { formatMonth } from "../../utils/months";
 
 const STATUS_STYLE: Record<string, string> = {
   "Not in monthly reports": "bg-red-50 text-red-800 border-red-200",
@@ -15,7 +15,7 @@ const STATUS_STYLE: Record<string, string> = {
   "Action taken": "bg-green-50 text-green-800 border-green-200",
 };
 
-function Table({ rows, caption, empty }: { rows: DaysRow[]; caption: string; empty: string }) {
+function Table({ rows, caption, empty }: { rows: TrackerRow[]; caption: string; empty: string }) {
   if (rows.length === 0) return <p className="text-sm text-muted">{empty}</p>;
   return (
     <div role="table" aria-label={caption} className="overflow-hidden rounded-xl border border-line">
@@ -69,8 +69,9 @@ function Table({ rows, caption, empty }: { rows: DaysRow[]; caption: string; emp
 const SHOW_FIRST = 6;
 
 export default function Tracker() {
-  const unmonitored = useMemo(() => unmonitoredRows(locations, facts), []);
-  const reports = useMemo(() => reportRows(), []);
+  const { stats, locations } = useData();
+  const unmonitored = useMemo(() => gapRows(locations, stats), []);
+  const reports = useMemo(() => complaintRows(), []);
   const [all, setAll] = useState(false);
   const shown = all ? unmonitored : unmonitored.slice(0, SHOW_FIRST);
   const today = formatDay(new Date().toISOString().slice(0, 10));
@@ -94,8 +95,8 @@ export default function Tracker() {
           <span className="text-xs font-semibold text-brand">Derived from the KSPCB dataset</span>
         </div>
         <p className="mb-3 text-xs text-muted">
-          Doddagubbi Lake is not among the {facts.locations} points. The rows below it are points that are in the
-          dataset but missing or blank in the latest ({formatMonth(facts.lastMonth)}) report, shown with the date of their
+          Doddagubbi Lake is not among the {stats.locations} points. The rows below it are points that are in the
+          dataset but missing or blank in the latest ({formatMonth(stats.lastMonth)}) report, shown with the date of their
           last reading.
         </p>
         <Table rows={shown} caption="Unmonitored water bodies" empty="No gaps found." />

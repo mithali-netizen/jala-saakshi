@@ -1,8 +1,8 @@
+import { useData } from "../../context/DataContext";
 import { useRef } from "react";
 import GapMap from "../components/GapMap";
 import { Card, SourceTag, Stat } from "../components/ui";
-import { facts } from "../services/store";
-import { formatMonth } from "../services/readings";
+import { formatMonth } from "../../utils/months";
 
 /** KSPCB class legend, verbatim (KSPCB August 2026 report, p. 3). Do not reword. */
 const LEGEND: [string, string][] = [
@@ -14,6 +14,7 @@ const LEGEND: [string, string][] = [
 ];
 
 export default function Home() {
+  const { stats } = useData();
   const api = useRef<{ karnataka: () => void; bengaluru: () => void } | null>(null);
   const chip =
     "rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-xs hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-brand";
@@ -23,13 +24,13 @@ export default function Home() {
       <header className="max-w-3xl">
         <p className="text-xs font-bold uppercase tracking-widest text-red-700">The monitoring gap</p>
         <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-ink sm:text-4xl">
-          KSPCB's monthly river reports cover {facts.locations} monitoring points on {facts.rivers} rivers.{" "}
-          <span className="text-red-700">{facts.lakeLocations} are lakes.</span>
+          KSPCB's monthly river reports cover {stats.locations} monitoring points on {stats.rivers} rivers.{" "}
+          <span className="text-red-700">{stats.lakesInReports} are lakes.</span>
         </h1>
         <p className="mt-3 text-base leading-relaxed text-slate-700">
           Doddagubbi Lake in Bengaluru, where news coverage reports thousands of dead fish in early October 2026, is not
-          one of them. The nearest monitoring point is {facts.nearest.km.toFixed(1)} km away, on the{" "}
-          {facts.nearest.river}.
+          one of them. The nearest monitoring point is {stats.nearestToDoddagubbi.km.toFixed(1)} km away, on the{" "}
+          {stats.nearestToDoddagubbi.river}.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <a href="#/lake" className="btn btn-primary">See what happened at Doddagubbi</a>
@@ -38,13 +39,13 @@ export default function Home() {
       </header>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Stat value={facts.locations} label="Monitoring points" note={`${facts.stationCodes} station codes over ${facts.reportsMonths} monthly reports, ${formatMonth(facts.firstMonth)} to ${formatMonth(facts.lastMonth)}`} />
-        <Stat value={facts.rivers} label="Rivers" note="Spelling variants across the PDFs merged" />
-        <Stat value={facts.lakeLocations} label="Lakes" note="No station name, river or stretch mentions a lake, kere or tank" tone="alert" />
+        <Stat value={stats.locations} label="Monitoring points" note={`${stats.stationCodes} station codes over ${stats.months.length} monthly reports, ${formatMonth(stats.firstMonth)} to ${formatMonth(stats.lastMonth)}`} />
+        <Stat value={stats.rivers} label="Rivers" note="Spelling variants across the PDFs merged" />
+        <Stat value={stats.lakesInReports} label="Lakes" note="No station name, river or stretch mentions a lake, kere or tank" tone="alert" />
         <Stat
-          value={facts.bengaluruStations}
+          value={stats.bengaluruStations}
           label="Stations in Bengaluru district"
-          note={`${facts.bengaluruNoReading} with no reading in the ${formatMonth(facts.lastMonth)} report. District is recorded only in that report.`}
+          note={`${stats.bengaluruNoReading} with no reading in the ${formatMonth(stats.lastMonth)} report. District is recorded only in that report.`}
         />
       </div>
 
@@ -88,7 +89,7 @@ export default function Home() {
           <p className="text-sm leading-relaxed text-slate-700">
             News coverage quotes a July 2026 KSPCB reading for Doddagubbi Lake: <b>Class E</b>, dissolved oxygen{" "}
             <b>3 mg/L</b>, BOD <b>22 mg/L</b>, coliform <b>5,400 MPN/100 ml</b>. It is a single reading, quoted
-            second-hand. It does not appear in the {facts.locations} monthly station points above.
+            second-hand. It does not appear in the {stats.locations} monthly station points above.
           </p>
           <p className="mt-2 text-xs text-muted">
             So the gap is not that nobody ever sampled the lake. It is that the lake is absent from the monthly

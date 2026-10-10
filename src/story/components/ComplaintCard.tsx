@@ -1,22 +1,27 @@
+import { useData } from "../../context/DataContext";
 import { useEffect, useMemo, useState } from "react";
+import type { Stats } from "../../services/stats";
 import { Card, SourceTag } from "./ui";
-import { KSPCB_EMAIL, KSPCB_NAME, KSPCB_PHONES } from "../config";
-import { DODDAGUBBI, DODDAGUBBI_NAME, FIRST_DEAD_FISH, formatDay, formatMonth } from "../services/readings";
-import { facts } from "../services/store";
-import { getRainfall, type RainResult } from "../services/rainfall";
+import { COMPLAINT_EMAIL, COMPLAINT_PHONES, RESPONSIBLE_AUTHORITY } from "../../config";
+import { DODDAGUBBI, FIRST_DEAD_FISH } from "../../services/doddagubbi";
+import { formatDay } from "../../utils/dates";
+import { formatMonth } from "../../utils/months";
+import { getRainfall, type RainResult } from "../../services/rainfall";
 
-const SUBJECT = `Request to check water quality at ${DODDAGUBBI_NAME}, Bengaluru (fish deaths reported from ${formatDay(FIRST_DEAD_FISH)})`;
+const SUBJECT = `Request to check water quality at ${DODDAGUBBI.name}, Bengaluru (fish deaths reported from ${formatDay(FIRST_DEAD_FISH)})`;
 
-function compose(rain: RainResult | null): string {
+const KSPCB_FULL_NAME = `${RESPONSIBLE_AUTHORITY.name}, ${RESPONSIBLE_AUTHORITY.division}`;
+
+function compose(rain: RainResult | null, stats: Stats): string {
   const today = formatDay(new Date().toISOString().slice(0, 10));
   const day = (d: string) => rain?.days.find((x) => x.date === d);
   const a = day("2026-09-29");
   const b = day("2026-09-30");
   const lines = [
-    `To: ${KSPCB_NAME}`,
+    `To: ${KSPCB_FULL_NAME}`,
     `Date: ${today}`,
     ``,
-    `I am writing about ${DODDAGUBBI_NAME}, Bengaluru (${DODDAGUBBI.lat.toFixed(4)}°N, ${DODDAGUBBI.lng.toFixed(4)}°E).`,
+    `I am writing about ${DODDAGUBBI.name}, Bengaluru (${DODDAGUBBI.lat.toFixed(4)}°N, ${DODDAGUBBI.lng.toFixed(4)}°E).`,
     ``,
     `What has been reported (news coverage):`,
     `- Heavy rain on 30 September 2026.`,
@@ -34,7 +39,7 @@ function compose(rain: RainResult | null): string {
     `- These values are consistent with sewage and organic load. I am not suggesting a cause.`,
     ``,
     `Monitoring gap:`,
-    `- ${DODDAGUBBI_NAME} does not appear among the ${facts.locations} monitoring points in KSPCB's monthly river reports (${formatMonth(facts.firstMonth)} to ${formatMonth(facts.lastMonth)}). The nearest point is ${facts.nearest.km.toFixed(1)} km away.`,
+    `- ${DODDAGUBBI.name} does not appear among the ${stats.locations} monitoring points in KSPCB's monthly river reports (${formatMonth(stats.firstMonth)} to ${formatMonth(stats.lastMonth)}). The nearest point is ${stats.nearestToDoddagubbi.km.toFixed(1)} km away.`,
     ``,
     `Could you please:`,
     `1. Tell me whether this lake is monitored, and how often.`,
@@ -50,6 +55,7 @@ function compose(rain: RainResult | null): string {
 }
 
 export default function ComplaintCard() {
+  const { stats } = useData();
   const [open, setOpen] = useState(false);
   const [rain, setRain] = useState<RainResult | null>(null);
   const [text, setText] = useState("");
@@ -59,10 +65,10 @@ export default function ComplaintCard() {
   useEffect(() => {
     getRainfall().then(setRain).catch(() => setRain(null));
   }, []);
-  const draft = useMemo(() => compose(rain), [rain]);
+  const draft = useMemo(() => compose(rain, stats), [rain, stats]);
   useEffect(() => setText(draft), [draft]);
 
-  const mailto = `mailto:${KSPCB_EMAIL}?subject=${encodeURIComponent(SUBJECT)}&body=${encodeURIComponent(text)}`;
+  const mailto = `mailto:${COMPLAINT_EMAIL}?subject=${encodeURIComponent(SUBJECT)}&body=${encodeURIComponent(text)}`;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(`Subject: ${SUBJECT}\n\n${text}`);
@@ -91,7 +97,7 @@ export default function ComplaintCard() {
       {open && (
         <div className="mt-4 space-y-3">
           <div className="text-xs text-muted">
-            To: <b className="text-ink">{KSPCB_EMAIL}</b>
+            To: <b className="text-ink">{COMPLAINT_EMAIL}</b>
             <br />
             Subject: <b className="text-ink">{SUBJECT}</b>
           </div>
@@ -112,7 +118,7 @@ export default function ComplaintCard() {
             <button type="button" className="btn btn-ghost" onClick={() => setText(draft)}>Reset text</button>
           </div>
           <p className="text-xs text-muted">
-            Prefer to phone? KSPCB's control room lines: {KSPCB_PHONES.join(", ")}. Replace the bracketed lines with your own
+            Prefer to phone? KSPCB's control room lines: {COMPLAINT_PHONES.join(", ")}. Replace the bracketed lines with your own
             details before you send.
           </p>
         </div>

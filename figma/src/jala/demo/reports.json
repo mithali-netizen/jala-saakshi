@@ -1,8 +1,0 @@
-[
-  { "id": "DEMO-1001", "what": "Doddagubbi Lake", "issue": "Dead fish", "reportedOn": "2026-10-01", "sentTo": ["KSPCB"], "status": "Sent", "respondedOn": null },
-  { "id": "DEMO-1002", "what": "Doddagubbi Lake", "issue": "Dead fish, many along the bund", "reportedOn": "2026-10-02", "sentTo": ["KSPCB"], "status": "Sent", "respondedOn": null },
-  { "id": "DEMO-1003", "what": "Doddagubbi Lake", "issue": "Strong smell", "reportedOn": "2026-10-03", "sentTo": ["KSPCB"], "status": "Acknowledged", "respondedOn": "2026-10-06" },
-  { "id": "DEMO-1004", "what": "Doddagubbi Lake", "issue": "Froth at the inlet", "reportedOn": "2026-10-04", "sentTo": ["KSPCB"], "status": "Submitted", "respondedOn": null },
-  { "id": "DEMO-1005", "what": "Doddagubbi Lake", "issue": "Dead fish", "reportedOn": "2026-10-05", "sentTo": ["KSPCB"], "status": "Sent", "respondedOn": null },
-  { "id": "DEMO-1006", "what": "Arkavathi near Kanakapura", "issue": "Foul-smelling discharge", "reportedOn": "2026-09-18", "sentTo": ["KSPCB"], "status": "Action taken", "respondedOn": "2026-10-02" }
-]

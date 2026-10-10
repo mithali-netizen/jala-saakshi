@@ -1,9 +1,11 @@
+import { useData } from "../../context/DataContext";
 import { useMemo, useState } from "react";
 import TimeChart from "../components/TimeChart";
 import { Card, SourceTag } from "../components/ui";
-import { formatMonth, hasValues } from "../services/readings";
-import { dataMonths, locations } from "../services/store";
-import type { MonitoringLocation, WaterClass } from "../types";
+import { formatMonth } from "../../utils/months";
+import { hasValues } from "../../utils/stations";
+import type { WaterClass } from "../../types/waterData";
+import type { MonitoringLocation } from "../../utils/stations";
 
 const CLASS_COLOR: Record<string, string> = { A: "#16a34a", B: "#0284c7", C: "#d97706", D: "#ea580c", E: "#dc2626" };
 
@@ -23,6 +25,7 @@ const latestWithValues = (l: MonitoringLocation) => {
 };
 
 export default function Explorer() {
+  const { locations, months } = useData();
   const rivers = useMemo(() => [...new Set(locations.map((l) => l.river))].sort(), []);
   const kanakapura = useMemo(
     () => locations.find((l) => l.river === "Arkavathi" && /kanakapura/i.test(l.name) && /d\/s/i.test(l.name)),
@@ -39,8 +42,8 @@ export default function Explorer() {
 
   const series = (key: "do" | "bod") =>
     selected.months.map((m) => ({ month: m, v: selected.byMonth.get(m)![key] }));
-  const first = dataMonths[0];
-  const last = dataMonths[dataMonths.length - 1];
+  const first = months[0];
+  const last = months[months.length - 1];
 
   const apr = kanakapura?.byMonth.get("2018-04");
   const aug = kanakapura?.byMonth.get(last);

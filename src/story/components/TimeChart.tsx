@@ -1,4 +1,4 @@
-import { formatMonth } from "../services/readings";
+import { formatMonth } from "../../utils/months";
 
 export interface Point {
   month: string; // YYYY-MM

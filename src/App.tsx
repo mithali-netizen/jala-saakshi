@@ -1,15 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import L from 'leaflet';
-import { AlertTriangle, Droplet, Filter, LayoutDashboard, RefreshCw, Smartphone } from 'lucide-react';
-import { useReadings } from './hooks/useReadings';
+import { AlertTriangle, BookOpen, Droplet, Filter, LayoutDashboard, RefreshCw, Smartphone } from 'lucide-react';
+import { useData } from './context/DataContext';
 import { RiverMap } from './components/Map/RiverMap';
 import { MonthSelector } from './components/Timeline/MonthSelector';
 import { StationPanel } from './components/StationPanel/StationPanel';
 import { SummaryStrip } from './components/Summary/SummaryStrip';
 import { KpiRow, type Focus } from './components/Dashboard/KpiRow';
 import { WaterBodyPanel } from './components/Detail/WaterBodyPanel';
-import { buildLocations, monthsWithData } from './utils/stations';
-import { computeStats } from './services/stats';
 import { UNMONITORED_WATER_BODIES } from './services/waterBodies';
 import { complaintRows, openComplaints } from './services/tracker';
 import { APP_NAME, APP_TAGLINE } from './brand';
@@ -25,18 +23,12 @@ const KARNATAKA = L.latLngBounds(L.latLng(11.5, 74.0), L.latLng(18.5, 78.6));
 const BENGALURU = L.latLngBounds(L.latLng(12.7, 77.2), L.latLng(13.35, 77.95));
 
 export const App: React.FC = () => {
-  const { readings, selectedMonth: requestedMonth, setSelectedMonth, isLoading, error, reload } = useReadings();
+  const { locations: allLocations, months, stats, selectedMonth, setSelectedMonth, isLoading, error, reload } = useData();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [riverFilter, setRiverFilter] = useState('all');
   const [focus, setFocus] = useState<Focus>('points');
   const [showWaterBodies, setShowWaterBodies] = useState(true);
-
-  const allLocations = useMemo(() => buildLocations(readings), [readings]);
-  const months = useMemo(() => monthsWithData(allLocations), [allLocations]);
-  // Every figure on screen comes from here — see src/services/stats.ts.
-  const stats = useMemo(() => computeStats(readings, allLocations), [readings, allLocations]);
-  const selectedMonth = months.includes(requestedMonth) ? requestedMonth : (months[months.length - 1] ?? '');
 
   const rivers = useMemo(() => [...new Set(allLocations.map((l) => l.river))].sort(), [allLocations]);
 
@@ -122,6 +114,12 @@ export const App: React.FC = () => {
                 </select>
               </label>
             )}
+            <a
+              href="#/story"
+              className="hidden h-8 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 lg:flex"
+            >
+              <BookOpen className="h-3.5 w-3.5" aria-hidden /> The case
+            </a>
             <a
               href="#/app"
               className="hidden h-8 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-xs font-semibold text-teal-800 hover:bg-teal-50 sm:flex"

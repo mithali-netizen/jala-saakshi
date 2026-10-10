@@ -4,10 +4,38 @@
 
 @theme {
   --font-sans: "Inter", system-ui, sans-serif;
+  /* Shared with the mock-up's palette so the dashboard, story pages and app agree. */
   --color-brand: #0f766e;
   --color-brand-dark: #115e59;
   --color-brand-soft: #ccfbf1;
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-canvas: #f8fafc;
+  --color-line: #e2e8f0;
 }
+
+/* Buttons used by the story pages; same shape as the mock-up's .btn. */
+.btn {
+  min-height: 2.5rem;
+  padding: 0.6rem 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 650;
+  text-decoration: none;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.btn-primary { background: var(--color-brand); color: #fff; }
+.btn-primary:hover { background: var(--color-brand-dark); }
+.btn-secondary { background: #fff; color: var(--color-ink); border-color: var(--color-line); }
+.btn-secondary:hover { background: var(--color-canvas); }
+.btn-ghost { background: transparent; color: var(--color-brand); }
+.btn-ghost:hover { background: var(--color-brand-soft); }
+.btn:focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; }
 
 /* Base layout adjustments for map view */
 html, body, #root {
