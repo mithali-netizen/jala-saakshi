@@ -5,6 +5,9 @@
  */
 export const DATA_URL = import.meta.env.VITE_DATA_URL || '/data/readings.json';
 
+/** Backend API base URL for AI photo analysis and complaint drafting */
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim() || '';
+
 /** Karnataka monitoring stations river geometry (Arkavathi etc.) */
 export const GEOJSON_URL = import.meta.env.VITE_GEOJSON_URL || '/data/river.geojson';
 
