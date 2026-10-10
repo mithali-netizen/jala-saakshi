@@ -16,6 +16,10 @@ export interface WaterReading {
   river_order?: number;
   status?: StationStatus;
   note?: string;
+  // Optional provenance fields from PDF extraction
+  district?: string;
+  stretch?: string;
+  lab?: string;
 }
 
 export interface StationLocation {

@@ -148,13 +148,24 @@ export const StationPanel: React.FC<StationPanelProps> = ({
           >
             {station.station_name}
           </h2>
-          <div className="text-xs text-slate-500 mt-1 flex items-center gap-2">
+          <div className="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
             <span>
               Flow Position: <strong>#{station.river_order ?? 'N/A'}</strong> of {allStations.length}
             </span>
             <span>•</span>
             <span>Month: <strong>{formatMonthName(selectedMonth)}</strong></span>
+            {currentReading?.district && (
+              <>
+                <span>•</span>
+                <span>District: <strong>{currentReading.district}</strong></span>
+              </>
+            )}
           </div>
+          {currentReading?.stretch && (
+            <div className="text-[11px] text-slate-400 mt-0.5 italic truncate">
+              Stretch: {currentReading.stretch}
+            </div>
+          )}
         </div>
 
         <button
