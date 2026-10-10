@@ -257,13 +257,12 @@ function LakesLayer({
 
   useEffect(() => {
     if (!visible || !lakes) return;
-    // Canvas keeps a few hundred polygons smooth; clicks still work.
-    const renderer = L.canvas({ padding: 0.3 });
+    // Canvas rendering comes from the map's preferCanvas option; clicks still work.
     const group = L.layerGroup().addTo(map);
     const shapes = shapesRef.current;
 
     for (const lake of lakes) {
-      const shape = L.polygon(lake.rings, { renderer, ...styleFor(lake, lake.id === selectedId) })
+      const shape = L.polygon(lake.rings, styleFor(lake, lake.id === selectedId))
         .bindTooltip(
           `<strong>${esc(lake.name)}</strong><br/>No reading in KSPCB's monthly river reports`,
           { direction: 'top', sticky: true },
@@ -380,6 +379,7 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
         minZoom={5}
         keyboard={false}
         scrollWheelZoom
+        preferCanvas
         zoomSnap={0.5}
         className="h-full w-full"
       >

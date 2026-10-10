@@ -275,3 +275,28 @@ textarea, select { width: 100%; padding: .75rem; resize: vertical; color: var(--
 .empty-state p { max-width: 17rem; color: var(--color-muted); font-size: .74rem; line-height: 1.5; }
 .empty-state .btn { margin-top: .75rem; }
 .queue-thumb { width: 2rem; height: 2rem; object-fit: cover; border-radius: .35rem; border: 1px solid var(--color-line); }
+
+/* ── Real maps (Leaflet) in the app and authority portal ─────────────────────
+   The global .leaflet-container height rule needs a sized parent, so these
+   give the map a box to fill rather than setting height on the map node. */
+.mm-fill { position: absolute; inset: 0; }
+.mm-compact { height: 18rem; border-radius: .7rem; overflow: hidden; border: 1px solid var(--color-line); }
+
+.mm-pin-wrap { background: none; border: 0; }
+.mm-pin { display: block; width: 14px; height: 14px; border-radius: 999px; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(15,23,42,.4); }
+.mm-pin-you { background: #0f766e; }
+.mm-pin-demo { background: #d97706; }
+
+.mm-pop { display: grid; gap: .15rem; font-size: .72rem; line-height: 1.35; }
+.mm-pop img { width: 100%; height: 6.5rem; object-fit: cover; border-radius: .4rem; margin-bottom: .25rem; }
+.mm-pop strong { font-size: .78rem; color: var(--color-ink); }
+.mm-pop span { color: var(--color-muted); }
+.mm-pop em { margin-top: .2rem; font-style: normal; font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.mm-tag-you { color: #0f766e; }
+.mm-tag-demo { color: #b45309; }
+
+.mm-dot { display: inline-block; width: .5rem; height: .5rem; border-radius: 999px; }
+.mm-dot.you { background: #0f766e; }
+.mm-dot.demo { background: #d97706; }
+.mm-dot.lake { background: #64748b; }
+.mm-dot.stn { background: #0284c7; }
