@@ -169,7 +169,7 @@ export const StationPanel: React.FC<StationPanelProps> = ({ location, selectedMo
           type="button"
           onClick={onClose}
           aria-label="Close panel"
-          className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-indigo-600"
+          className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-teal-700"
         >
           <X className="h-5 w-5" />
         </button>
@@ -237,7 +237,7 @@ export const StationPanel: React.FC<StationPanelProps> = ({ location, selectedMo
           <button
             type="button"
             onClick={reportByEmail}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
           >
             <Megaphone className="h-4 w-4" /> Report a problem
           </button>
@@ -245,8 +245,8 @@ export const StationPanel: React.FC<StationPanelProps> = ({ location, selectedMo
             type="button"
             onClick={toggleAlerts}
             aria-pressed={alertsOn}
-            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
-              alertsOn ? 'border-indigo-600 bg-indigo-50 text-indigo-800' : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${
+              alertsOn ? 'border-teal-700 bg-teal-50 text-teal-900' : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
             }`}
           >
             {alertsOn ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
@@ -299,7 +299,7 @@ export const StationPanel: React.FC<StationPanelProps> = ({ location, selectedMo
                 </a>
               ))}
             </div>
-            <a href={`mailto:${COMPLAINT_EMAIL}`} className="text-indigo-700 underline">
+            <a href={`mailto:${COMPLAINT_EMAIL}`} className="text-teal-800 underline">
               {COMPLAINT_EMAIL}
             </a>
           </div>

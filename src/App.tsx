@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { AlertTriangle, Filter, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Droplet, Filter, LayoutDashboard, RefreshCw, Smartphone } from 'lucide-react';
 import { useReadings } from './hooks/useReadings';
 import { RiverMap } from './components/Map/RiverMap';
 import { MonthSelector } from './components/Timeline/MonthSelector';
@@ -38,11 +38,28 @@ export const App: React.FC = () => {
     <div className="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-800">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div>
-            <h1 className="text-xl font-bold leading-tight tracking-tight text-slate-900">{APP_NAME}</h1>
-            <p className="text-xs text-slate-500">Karnataka water quality: KSPCB monitoring data</p>
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 items-center justify-center rounded-[0.7rem_0.7rem_0.7rem_0.2rem] bg-teal-700 text-white">
+              <Droplet className="h-5 w-5" aria-hidden />
+            </span>
+            <div>
+              <h1 className="text-xl font-bold leading-tight tracking-tight text-slate-900">{APP_NAME}</h1>
+              <p className="text-xs text-slate-500">Karnataka water quality: KSPCB monitoring data</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
+            <a
+              href="#/app"
+              className="hidden h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-teal-800 hover:bg-teal-50 sm:flex"
+            >
+              <Smartphone className="h-3.5 w-3.5" aria-hidden /> Mobile app
+            </a>
+            <a
+              href="#/authority"
+              className="hidden h-9 items-center gap-1.5 rounded-lg bg-teal-700 px-3 text-xs font-semibold text-white hover:bg-teal-800 sm:flex"
+            >
+              <LayoutDashboard className="h-3.5 w-3.5" aria-hidden /> Authority portal
+            </a>
             {rivers.length > 1 && (
               <label className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs">
                 <Filter className="h-3.5 w-3.5 text-slate-500" aria-hidden />
@@ -69,7 +86,7 @@ export const App: React.FC = () => {
               onClick={reload}
               title="Refresh data"
               aria-label="Refresh data"
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-indigo-600"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-teal-700"
             >
               <RefreshCw className="h-4 w-4" />
             </button>
@@ -94,7 +111,7 @@ export const App: React.FC = () => {
             <button
               type="button"
               onClick={reload}
-              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
             >
               <RefreshCw className="h-4 w-4" /> Try again
             </button>

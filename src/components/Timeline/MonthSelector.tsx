@@ -73,13 +73,13 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({ months, selectedMo
   if (months.length === 0) return null;
 
   const btn =
-    'inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-indigo-600';
+    'inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-teal-700';
 
   return (
     <section aria-label="Time period" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-700">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-50 text-teal-800">
             <Calendar className="h-[18px] w-[18px]" />
           </div>
           <div>
@@ -93,7 +93,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({ months, selectedMo
             type="button"
             onClick={togglePlay}
             aria-label={playing ? 'Pause' : 'Play through months'}
-            className="mr-1 inline-flex h-8 items-center gap-1.5 rounded-lg bg-indigo-600 px-3 text-xs font-semibold text-white transition-colors hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+            className="mr-1 inline-flex h-8 items-center gap-1.5 rounded-lg bg-teal-700 px-3 text-xs font-semibold text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
           >
             {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
             {playing ? 'Pause' : 'Play'}
@@ -127,7 +127,7 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({ months, selectedMo
         }}
         aria-label="Month slider"
         aria-valuetext={formatMonth(selectedMonth)}
-        className="mt-3 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-indigo-600"
+        className="mt-3 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-slate-200 accent-teal-700"
       />
 
       {/* Chips, grouped by year. Scrolls sideways when there are many years. */}
@@ -149,8 +149,8 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({ months, selectedMo
                     role="option"
                     aria-selected={selected}
                     onClick={manual(() => onSelectMonth(m))}
-                    className={`h-7 min-w-[2.75rem] rounded-md px-2 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-indigo-600 ${
-                      selected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    className={`h-7 min-w-[2.75rem] rounded-md px-2 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-teal-700 ${
+                      selected ? 'bg-teal-700 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
                     {monthAbbr(m)}

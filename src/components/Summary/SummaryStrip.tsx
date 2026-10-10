@@ -102,8 +102,8 @@ export const SummaryStrip: React.FC<SummaryStripProps> = ({ locations, months, s
                   <button
                     type="button"
                     onClick={() => onSelect(location.id)}
-                    className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left text-xs transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-indigo-600 ${
-                      active ? 'bg-indigo-50' : ''
+                    className={`flex w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left text-xs transition-colors hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-teal-700 ${
+                      active ? 'bg-teal-50' : ''
                     }`}
                   >
                     <span className="w-3 text-[11px] text-slate-400 tabular-nums">{i + 1}</span>

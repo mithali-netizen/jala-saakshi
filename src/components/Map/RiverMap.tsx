@@ -281,7 +281,7 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
         <button
           type="button"
           onClick={fitKarnataka}
-          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white/95 px-2.5 text-xs font-medium text-slate-700 shadow-xs backdrop-blur hover:bg-white focus-visible:outline-2 focus-visible:outline-indigo-600"
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white/95 px-2.5 text-xs font-medium text-slate-700 shadow-xs backdrop-blur hover:bg-white focus-visible:outline-2 focus-visible:outline-teal-700"
         >
           <Maximize2 className="h-3.5 w-3.5" /> Karnataka
         </button>
@@ -290,7 +290,7 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
             type="checkbox"
             checked={showAllRivers}
             onChange={(e) => setShowAllRivers(e.target.checked)}
-            className="h-3.5 w-3.5 accent-indigo-600"
+            className="h-3.5 w-3.5 accent-teal-700"
           />
           River lines
         </label>

@@ -12,7 +12,7 @@ export const Hint: React.FC<{ text: string; children: React.ReactNode; align?: '
       <span
         tabIndex={0}
         aria-describedby={id}
-        className="cursor-help border-b border-dotted border-slate-400 outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-sm"
+        className="cursor-help border-b border-dotted border-slate-400 outline-none focus-visible:ring-2 focus-visible:ring-teal-600 rounded-sm"
       >
         {children}
       </span>
