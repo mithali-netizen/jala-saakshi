@@ -443,35 +443,55 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
           />
           {props.lakes ? `Bengaluru lakes (${props.lakes.length})` : 'Loading lakes…'}
         </label>
+
+        <p className="text-[10px] text-slate-400 leading-snug max-w-[165px] mt-0.5 border-t border-slate-100 pt-1.5">
+          Water-quality readings currently cover{' '}
+          <span className="font-semibold text-slate-500">Karnataka only.</span>
+        </p>
       </div>
 
-      {/* Legend */}
-      <div className="absolute bottom-4 left-4 z-[400] hidden rounded-xl border border-slate-200 bg-white/95 p-3 text-xs shadow-xs backdrop-blur sm:block">
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">CPCB water class</div>
-        <div className="grid grid-cols-3 gap-x-4 gap-y-1.5">
-          {(
-            [
-              ['A', 'Pristine'],
-              ['B', 'Bathing'],
-              ['C', 'Treat to drink'],
-              ['D', 'Fish only'],
-              ['E', 'Irrigation'],
-              ['NONE', 'No data'],
-            ] as const
-          ).map(([k, label]) => {
-            const v = getClassConfig(k === 'NONE' ? null : k);
+      {/* ── Legend — bottom-left overlay ──────────────────────────────── */}
+      <div
+        className="absolute bottom-4 left-4 z-[400] bg-white/95 backdrop-blur-sm
+                   p-3 rounded-xl shadow-md border border-slate-200 text-xs
+                   max-w-xs pointer-events-auto"
+      >
+        <div className="font-semibold text-slate-800 mb-1.5 flex items-center justify-between">
+          <span>Water Quality Scale</span>
+          <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wide">
+            CPCB Classes
+          </span>
+        </div>
+        <p className="text-[11px] text-slate-500 mb-2">
+          Markers display letters and distinct hues for colour-blind accessibility.
+        </p>
+        <div className="grid grid-cols-3 gap-1.5">
+          {(['A', 'B', 'C', 'D', 'E', undefined] as const).map((waterClass) => {
+            const config = getClassConfig(waterClass);
             return (
-              <div key={k} className="flex items-center gap-1.5">
-                <span
-                  className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
-                  style={{ background: v.bgHex }}
-                >
-                  {v.letter}
-                </span>
-                <span className="text-slate-700">{label}</span>
-              </div>
+            <div key={config.letter} className="flex items-center gap-1.5">
+              <span
+                className="w-5 h-5 rounded-full text-white font-bold flex items-center justify-center text-[10px] shrink-0"
+                style={{ background: config.bgHex }}
+              >
+                {config.letter}
+              </span>
+              <span className="text-slate-700 text-[11px]">{config.label}</span>
+            </div>
             );
           })}
+        </div>
+
+        {/* River-line key */}
+        <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <div className="w-7 border-t-2 border-slate-400 opacity-60" />
+            <span className="text-[11px] text-slate-600">India rivers (background)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-7 border-t-[4px] border-sky-500 rounded" />
+            <span className="text-[11px] text-slate-600">Monitoring rivers</span>
+          </div>
         </div>
       </div>
     </div>

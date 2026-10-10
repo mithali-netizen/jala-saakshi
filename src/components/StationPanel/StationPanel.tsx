@@ -9,6 +9,8 @@ import {
   Megaphone,
   Minus,
   Phone,
+  Camera,
+  Sparkles,
   TrendingDown,
   TrendingUp,
   X,
@@ -23,10 +25,12 @@ import {
   type ParamKey,
 } from '../../utils/waterQuality';
 import { formatMonth } from '../../utils/months';
-import { COMPLAINT_EMAIL, COMPLAINT_PHONES, RESPONSIBLE_AUTHORITY } from '../../config';
+import { API_BASE_URL, COMPLAINT_EMAIL, COMPLAINT_PHONES, RESPONSIBLE_AUTHORITY } from '../../config';
 import { classMeaning, coliformMeaning, bodMeaning, doMeaning, headline, OFFICIAL_EXPLANATIONS } from '../../plainLanguage';
 import { Hint } from '../ui/Hint';
 import { TrendChart } from './TrendChart';
+import { ReportPollutionModal } from '../PollutionReport/ReportPollutionModal';
+import { ComplaintDraftModal, type ComplaintDraftInput } from '../PollutionReport/ComplaintDraftModal';
 
 interface StationPanelProps {
   location: MonitoringLocation;
@@ -99,6 +103,7 @@ const ParamBar: React.FC<{ param: ParamKey; value: number | null | undefined; ex
       <p className="text-xs text-slate-600">
         <span className="font-semibold text-slate-700">{verdict}.</span> {explanation}
       </p>
+
     </div>
   );
 };
@@ -116,6 +121,16 @@ export const StationPanel: React.FC<StationPanelProps> = ({ location, selectedMo
   );
 
   const [alertsOn, setAlertsOn] = useState(() => readAlerts().includes(location.id));
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isComplaintModalOpen, setIsComplaintModalOpen] = useState(false);
+  const [complaintInput, setComplaintInput] = useState<ComplaintDraftInput | null>(null);
+  const reportStation = {
+    station_code: location.codes[0] ?? location.id,
+    station_name: location.name,
+    river: location.river,
+    lat: location.lat,
+    lng: location.lng,
+  };
   const toggleAlerts = () => {
     const next = !alertsOn;
     setAlertsOn(next);
@@ -234,13 +249,15 @@ export const StationPanel: React.FC<StationPanelProps> = ({ location, selectedMo
 
         {/* Actions */}
         <section className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={reportByEmail}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
-          >
-            <Megaphone className="h-4 w-4" /> Report a problem
-          </button>
+          {API_BASE_URL && (
+            <button
+              type="button"
+              onClick={() => setIsReportModalOpen(true)}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-teal-700 px-3 py-2.5 text-sm font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+            >
+              <Camera className="h-4 w-4" /> Report pollution <Sparkles className="h-3.5 w-3.5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={toggleAlerts}
@@ -251,6 +268,13 @@ export const StationPanel: React.FC<StationPanelProps> = ({ location, selectedMo
           >
             {alertsOn ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
             {alertsOn ? 'Alerts on' : 'Get alerts'}
+          </button>
+          <button
+            type="button"
+            onClick={reportByEmail}
+            className="col-span-2 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-teal-700"
+          >
+            <Megaphone className="h-3.5 w-3.5" /> Draft a direct email without a photo
           </button>
           {alertsOn && (
             <p className="col-span-2 text-[11px] text-slate-500">
@@ -305,6 +329,34 @@ export const StationPanel: React.FC<StationPanelProps> = ({ location, selectedMo
           </div>
         </details>
       </div>
+      <ReportPollutionModal
+        isOpen={isReportModalOpen}
+        onClose={() => setIsReportModalOpen(false)}
+        station={reportStation}
+        currentReading={reading}
+        onProceedToComplaint={(analysis) => {
+          setComplaintInput(analysis);
+          setIsReportModalOpen(false);
+          setIsComplaintModalOpen(true);
+        }}
+      />
+      {complaintInput && (
+        <ComplaintDraftModal
+          isOpen={isComplaintModalOpen}
+          onClose={() => {
+            setIsComplaintModalOpen(false);
+            setComplaintInput(null);
+          }}
+          onBack={() => {
+            setIsComplaintModalOpen(false);
+            setIsReportModalOpen(true);
+          }}
+          station={reportStation}
+          currentReading={reading}
+          selectedMonth={selectedMonth}
+          input={complaintInput}
+        />
+      )}
     </aside>
   );
 };

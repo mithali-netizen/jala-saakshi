@@ -27,6 +27,13 @@ dist-ssr
 .env
 .env.*
 !.env.example
+.env.local
+
+# Python and local AWS tooling
+__pycache__/
+*.pyc
+.venv/
+.aws-sam/
 
 # Credentials and private keys
 .aws/

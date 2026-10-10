@@ -1,0 +1,120 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AWS SAM Template for KSPCB River Water Quality - AI Pollution Report & Citizen Complaint Backend.
+  Uses Amazon Bedrock with Amazon Nova Lite (us.amazon.nova-lite-v1:0 inference profile).
+
+Parameters:
+  AmplifyDomain:
+    Type: String
+    Default: 'http://localhost:5173'
+    Description: Allowed CORS origin for AWS Amplify front-end hosting domain (or http://localhost:5173).
+  BedrockModelId:
+    Type: String
+    Default: 'us.amazon.nova-lite-v1:0'
+    Description: Bedrock inference profile or foundation model ID.
+  BedrockRegion:
+    Type: String
+    Default: 'us-east-1'
+    Description: AWS region where Amazon Bedrock model inference is configured.
+  MockBedrock:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: Set to 'true' to return realistic canned AI responses locally without calling Bedrock.
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 30
+    MemorySize: 512
+    Tracing: Active
+    Environment:
+      Variables:
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+        AWS_REGION: !Ref BedrockRegion
+        MOCK_BEDROCK: !Ref MockBedrock
+        ALLOWED_ORIGIN: !Ref AmplifyDomain
+
+Resources:
+  # ─── HTTP API Gateway with CORS & Throttling ──────────────────────────────
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AmplifyDomain
+          - 'http://localhost:5173'
+        AllowMethods:
+          - POST
+          - OPTIONS
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Amz-Date
+          - X-Api-Key
+        MaxAge: 600
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 10
+        ThrottlingRateLimit: 5
+
+  # ─── 1. Analyze Photo Function ─────────────────────────────────────────────
+  AnalyzePhotoFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: analyze_photo.lambda_handler
+      Description: Multimodal photo classification using Amazon Nova Lite (Converse API)
+      Policies:
+        - Statement:
+            - Sid: BedrockInvokeModelPolicy
+              Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource:
+                - !Sub 'arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${BedrockModelId}'
+                - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/*'
+                - 'arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0'
+      Events:
+        AnalyzePhoto:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /analyze-photo
+            Method: POST
+
+  # ─── 2. Draft Complaint Function ───────────────────────────────────────────
+  DraftComplaintFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: draft_complaint.lambda_handler
+      Description: Formal citizen complaint generator in English & Kannada using Nova Lite
+      Policies:
+        - Statement:
+            - Sid: BedrockInvokeModelPolicy
+              Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource:
+                - !Sub 'arn:aws:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${BedrockModelId}'
+                - !Sub 'arn:aws:bedrock:${AWS::Region}::foundation-model/*'
+                - 'arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0'
+      Events:
+        DraftComplaint:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /draft-complaint
+            Method: POST
+
+Outputs:
+  HttpApiUrl:
+    Description: Base URL for HTTP API Gateway
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+  AnalyzePhotoEndpoint:
+    Description: Photo analysis endpoint URL
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/analyze-photo'
+  DraftComplaintEndpoint:
+    Description: Citizen complaint draft endpoint URL
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/draft-complaint'

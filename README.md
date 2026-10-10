@@ -200,8 +200,35 @@ Replace `public/data/river.geojson` with the India-WRIS geometry (or any valid G
 
 ---
 
-## No API Keys Required
+## AI Pollution Reporting Backend (Local Development & Testing)
+
+A serverless backend powered by **Amazon Bedrock (Amazon Nova Lite)** is located in `backend/` and defined in `backend/template.yaml`.
+
+### 1. Run the Local Backend Server (Zero AWS Cost)
+
+Run the zero-dependency local server on `http://localhost:8787`:
+
+```bash
+python backend/local_server.py
+```
+
+- Defaults to `MOCK_BEDROCK=true`, generating realistic canned AI responses without requiring AWS credentials or Docker.
+- To connect to live Amazon Bedrock, set `$env:MOCK_BEDROCK="false"` (PowerShell) or `MOCK_BEDROCK=false` and provide valid AWS credentials.
+
+### 2. Run Backend Unit Tests
+
+Run all unit tests using `pytest`:
+
+```bash
+python -m pytest backend/tests/ -v
+```
+
+All 10 tests run against mocked handlers without making any network calls.
+
+---
+
+## No API Keys Required in Frontend
 
 - Map tiles: [OpenStreetMap](https://www.openstreetmap.org/) — free, no key
-- No backend, no database, no authentication
-- No secrets in this repository
+- Bedrock API calls are never made from the browser; they run via the backend handlers.
+- No secrets in this repository.
