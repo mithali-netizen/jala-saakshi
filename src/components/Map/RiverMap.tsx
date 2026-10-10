@@ -1,467 +1,329 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, GeoJSON, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { MapContainer, TileLayer, GeoJSON, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
 import type { GeoJsonObject } from 'geojson';
+import { Maximize2 } from 'lucide-react';
 import { GEOJSON_URL, RIVERS_URL } from '../../config';
-import type { WaterReading, StationLocation } from '../../types/waterData';
+import type { MonitoringLocation } from '../../utils/stations';
 import { getClassConfig } from '../../utils/waterQuality';
+import { formatMonth } from '../../utils/months';
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-/** Leaflet LatLngBounds covering all of India */
-const INDIA_BOUNDS = L.latLngBounds(
-  L.latLng(6.5, 68.0),
-  L.latLng(37.5, 97.5),
-);
-
-/** Snug bounds around the Karnataka monitoring cluster */
-const KARNATAKA_BOUNDS = L.latLngBounds(
-  L.latLng(11.5, 75.5),
-  L.latLng(15.5, 78.5),
-);
-
-// ─── Types ────────────────────────────────────────────────────────────────────
+/** Whole of Karnataka, so the first view is the state and not the subcontinent. */
+const KARNATAKA_BOUNDS = L.latLngBounds(L.latLng(11.5, 74.0), L.latLng(18.5, 78.6));
 
 interface RiverMapProps {
-  stations: StationLocation[];
-  readings: WaterReading[];
+  locations: MonitoringLocation[];
   selectedMonth: string;
-  selectedStationCode?: string | null;
-  onSelectStation?: (stationCode: string) => void;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  /** Panel docked over the map; used to keep the selected pin out from under it. */
+  panelOpen: boolean;
 }
 
-// ─── MapController: initial India view + fly-to-station ──────────────────────
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-/**
- * Sets the initial map view to all of India.
- * When selectedStationCode changes, flies first to the Karnataka cluster
- * then zooms to the individual station.
- */
-function MapController({
-  stations,
-  selectedStationCode,
-}: {
-  stations: StationLocation[];
-  selectedStationCode?: string | null;
-}) {
-  const map = useMap();
+// ─── Rivers background (lazy, canvas-rendered) ───────────────────────────────
 
-  // First mount: show all of India
-  useEffect(() => {
-    map.fitBounds(INDIA_BOUNDS, { animate: false });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+const RIVER_STYLE: L.PathOptions = { color: '#94a3b8', weight: 1, opacity: 0.55, fillOpacity: 0 };
 
-  // Station selected → fly to Karnataka, then zoom to the station pin
-  useEffect(() => {
-    if (!selectedStationCode) return;
-    const station = stations.find((s) => s.station_code === selectedStationCode);
-    if (!station) return;
-
-    // Step 1: pull back to show Karnataka context
-    map.flyToBounds(KARNATAKA_BOUNDS, { padding: [60, 60], maxZoom: 10, duration: 0.8 });
-
-    // Step 2: after the pan settles, pin on the station
-    const timer = setTimeout(() => {
-      map.flyTo([station.lat, station.lng], 12, { duration: 1.0 });
-    }, 900);
-
-    return () => clearTimeout(timer);
-  }, [selectedStationCode, stations, map]);
-
-  return null;
-}
-
-// ─── NationalRiversLayer: SVG-rendered, clickable river lines ────────────────
-
-/**
- * Fetches rivers-india.geojson once and renders each river as a clickable SVG
- * polyline. Clicking opens a Leaflet popup with the river name and state(s).
- * Hover brightens the line. Toggled on/off by `visible` without re-fetching.
- */
 function NationalRiversLayer({ url, visible }: { url: string; visible: boolean }) {
   const map = useMap();
   const layerRef = useRef<L.GeoJSON | null>(null);
-  const fetchedRef = useRef(false);
+  const startedRef = useRef(false);
 
-  const DEFAULT_STYLE: L.PathOptions = {
-    color: '#94a3b8',
-    weight: 1.2,
-    opacity: 0.6,
-    fillOpacity: 0,
-  };
-  const HOVER_STYLE: L.PathOptions = {
-    color: '#38bdf8',
-    weight: 2.8,
-    opacity: 0.9,
-  };
-
-  // Fetch once and build the SVG layer
+  // Fetch the large file only the first time the layer is switched on.
   useEffect(() => {
-    if (fetchedRef.current) return;
-
+    if (!visible || startedRef.current) return;
+    startedRef.current = true;
+    let cancelled = false;
     fetch(url)
       .then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
       .then((data: GeoJsonObject) => {
-        fetchedRef.current = true;
-
-        layerRef.current = L.geoJSON(data, {
-          style: DEFAULT_STYLE,
-          interactive: true,
-          onEachFeature(feature, layer) {
-            const p = feature.properties as Record<string, unknown>;
-            const name = (p['rivname'] as string) || (p['name'] as string) || 'Unknown River';
-            const state = (p['state_al'] as string) || (p['st_loc_ste'] as string) || '';
-
-            // Popup content — name + state only
-            const popupContent = `
-              <div style="
-                font-family: 'Inter', system-ui, sans-serif;
-                min-width: 160px;
-                padding: 4px 2px;
-              ">
-                <div style="
-                  font-size: 13px;
-                  font-weight: 700;
-                  color: #0f172a;
-                  margin-bottom: 4px;
-                  line-height: 1.3;
-                ">${name}</div>
-                ${state ? `
-                  <div style="
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
-                    font-size: 11px;
-                    color: #475569;
-                  ">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0">
-                      <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
-                      <circle cx="12" cy="10" r="3"/>
-                    </svg>
-                    ${state.split(',').map((s: string) => s.trim()).join(' · ')}
-                  </div>
-                ` : ''}
-              </div>
-            `;
-
-            layer.bindPopup(popupContent, {
-              closeButton: true,
-              className: 'river-popup',
-              maxWidth: 240,
-            });
-
-            // Hover highlight
-            layer.on('mouseover', () => {
-              (layer as L.Path).setStyle(HOVER_STYLE);
-              (layer as L.Path).bringToFront();
-            });
-            layer.on('mouseout', () => {
-              (layer as L.Path).setStyle(DEFAULT_STYLE);
-            });
-          },
-        });
-
-        if (visible) layerRef.current!.addTo(map);
+        if (cancelled) return;
+        const layer = L.geoJSON(data, {
+          style: RIVER_STYLE,
+          renderer: L.canvas({ padding: 0.3 }),
+          interactive: false,
+        } as L.GeoJSONOptions);
+        layerRef.current = layer;
+        layer.addTo(map);
+        layer.bringToBack();
       })
-      .catch((err) =>
-        console.warn('[NationalRiversLayer] Failed to load:', err),
-      );
-  }, [url, map]); // eslint-disable-line react-hooks/exhaustive-deps
+      .catch((err) => console.warn('[NationalRiversLayer] Failed to load:', err));
+    return () => {
+      cancelled = true;
+      // Strict Mode remount: allow the fetch to run again.
+      if (!layerRef.current) startedRef.current = false;
+    };
+  }, [url, visible, map]);
 
-  // Toggle visibility without re-fetching
   useEffect(() => {
-    if (!layerRef.current) return;
-    if (visible) {
-      if (!map.hasLayer(layerRef.current)) layerRef.current.addTo(map);
-    } else {
-      if (map.hasLayer(layerRef.current)) map.removeLayer(layerRef.current);
-    }
+    const layer = layerRef.current;
+    if (!layer) return;
+    if (visible && !map.hasLayer(layer)) layer.addTo(map).bringToBack();
+    if (!visible && map.hasLayer(layer)) map.removeLayer(layer);
   }, [visible, map]);
 
   return null;
 }
 
-// Create an accessible DivIcon with Class letter and color-coded badge
-function createStationIcon(waterClass: string | null | undefined, isSelected: boolean) {
-  const visual = getClassConfig(waterClass as any);
+// ─── Station markers (imperative, updated in place) ──────────────────────────
 
-  const html = `
-    <div class="station-marker-pin ${isSelected ? 'selected' : ''}" style="background-color: ${visual.bgHex}; border-color: ${visual.borderHex};">
-      ${isSelected ? `<span class="marker-pulse-ring" style="background-color: ${visual.bgHex};"></span>` : ''}
-      <span>${visual.letter}</span>
-    </div>
-  `;
-
+function pinIcon(waterClass: string | null | undefined, selected: boolean) {
+  const v = getClassConfig(waterClass as never);
   return L.divIcon({
-    html,
-    className: 'custom-station-pin',
-    iconSize: [38, 38],
-    iconAnchor: [19, 19],
-    popupAnchor: [0, -20],
+    className: 'stn-pin-wrap',
+    html: `<div class="stn-pin${selected ? ' is-selected' : ''}" style="background:${v.bgHex}">${v.letter}</div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
   });
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+function clusterIcon(cluster: L.MarkerCluster) {
+  const n = cluster.getChildCount();
+  const size = n < 10 ? 32 : n < 30 ? 38 : 44;
+  return L.divIcon({
+    className: 'stn-cluster-wrap',
+    html: `<div class="stn-cluster" style="width:${size}px;height:${size}px">${n}</div>`,
+    iconSize: [size, size],
+  });
+}
 
-export const RiverMap: React.FC<RiverMapProps> = ({
-  stations,
-  readings,
-  selectedMonth,
-  selectedStationCode,
-  onSelectStation,
-}) => {
-  const [arkavathiData, setArkavathiData] = useState<GeoJsonObject | null>(null);
-  const [showAllRivers, setShowAllRivers] = useState(true);
+function StationsLayer({ locations, selectedMonth, selectedId, onSelect, panelOpen }: RiverMapProps) {
+  const map = useMap();
+  const clusterRef = useRef<L.MarkerClusterGroup | null>(null);
+  const markersRef = useRef(new Map<string, L.Marker>());
+  const iconKeyRef = useRef(new Map<string, string>());
+  const shownRef = useRef(new Set<string>());
 
-  // Fetch Arkavathi / Karnataka monitoring-station river geometry
+  // Latest values for event handlers, without re-binding them.
+  const live = useRef({ locations, selectedMonth, onSelect });
+  live.current = { locations, selectedMonth, onSelect };
+
+  useEffect(() => {
+    const group = L.markerClusterGroup({
+      showCoverageOnHover: false,
+      maxClusterRadius: 38,
+      spiderfyOnMaxZoom: true,
+      zoomToBoundsOnClick: true,
+      removeOutsideVisibleBounds: true,
+      iconCreateFunction: clusterIcon,
+    });
+    clusterRef.current = group;
+    map.addLayer(group);
+    const markers = markersRef.current;
+    const iconKeys = iconKeyRef.current;
+    const shown = shownRef.current;
+    return () => {
+      map.removeLayer(group);
+      clusterRef.current = null;
+      markers.clear();
+      iconKeys.clear();
+      shown.clear();
+    };
+  }, [map]);
+
+  // Sync markers with the filter, month and selection. Existing markers are reused;
+  // only the ones whose class or selected state changed get a new icon.
+  useEffect(() => {
+    const group = clusterRef.current;
+    if (!group) return;
+    const markers = markersRef.current;
+    const shown = shownRef.current;
+    const toAdd: [string, L.Marker][] = [];
+    const toRemove: [string, L.Marker][] = [];
+    const wanted = new Set<string>();
+
+    for (const loc of locations) {
+      const reading = loc.byMonth.get(selectedMonth);
+      if (!reading) continue;
+      wanted.add(loc.id);
+
+      const cls = reading.class ?? null;
+      const selected = loc.id === selectedId;
+      const key = `${cls}|${selected}`;
+
+      let marker = markers.get(loc.id);
+      if (!marker) {
+        marker = L.marker([loc.lat, loc.lng], {
+          icon: pinIcon(cls, selected),
+          riseOnHover: true,
+          keyboard: false,
+        });
+        marker.bindTooltip(
+          () => {
+            const l = live.current.locations.find((x) => x.id === loc.id);
+            const r = l?.byMonth.get(live.current.selectedMonth);
+            const v = getClassConfig(r?.class);
+            return `<div class="stn-tip"><strong>${esc(l?.name ?? loc.name)}</strong>
+              <span>${esc(l?.river ?? loc.river)} · ${esc(formatMonth(live.current.selectedMonth))}</span>
+              <span class="stn-tip-class"><i style="background:${v.bgHex}">${v.letter}</i>${
+                r?.class ? `Class ${r.class}` : 'No class recorded'
+              }</span></div>`;
+          },
+          { direction: 'top', offset: [0, -12], opacity: 1, className: 'stn-tooltip' },
+        );
+        marker.on('click', () => live.current.onSelect(loc.id));
+        markers.set(loc.id, marker);
+        iconKeyRef.current.set(loc.id, key);
+      } else if (iconKeyRef.current.get(loc.id) !== key) {
+        marker.setIcon(pinIcon(cls, selected));
+        iconKeyRef.current.set(loc.id, key);
+      }
+      if (!shown.has(loc.id)) toAdd.push([loc.id, marker]);
+    }
+
+    for (const id of shown) {
+      if (!wanted.has(id)) {
+        const m = markers.get(id);
+        if (m) toRemove.push([id, m]);
+      }
+    }
+    if (toRemove.length) group.removeLayers(toRemove.map(([, m]) => m));
+    if (toAdd.length) group.addLayers(toAdd.map(([, m]) => m));
+    toRemove.forEach(([id]) => shown.delete(id));
+    toAdd.forEach(([id]) => shown.add(id));
+  }, [locations, selectedMonth, selectedId]);
+
+  // Bring the selected pin into view (opening its cluster if needed), clear of the docked panel.
+  useEffect(() => {
+    if (!selectedId) return;
+    const group = clusterRef.current;
+    const marker = markersRef.current.get(selectedId);
+    if (!group || !marker || !shownRef.current.has(selectedId)) return;
+    const wide = window.matchMedia('(min-width: 1024px)').matches;
+    const reveal = () => {
+      const pad = panelOpen ? (wide ? { right: 440, bottom: 20 } : { right: 20, bottom: map.getSize().y * 0.55 }) : { right: 20, bottom: 20 };
+      map.panInside(marker.getLatLng(), {
+        paddingTopLeft: [60, 60],
+        paddingBottomRight: [pad.right, pad.bottom],
+        animate: true,
+      });
+    };
+    group.zoomToShowLayer(marker, reveal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, map]);
+
+  return null;
+}
+
+// ─── Container: keeps the map sized correctly when the layout shifts ─────────
+
+function SizeWatcher() {
+  const map = useMap();
+  useEffect(() => {
+    const ro = new ResizeObserver(() => map.invalidateSize({ animate: false }));
+    ro.observe(map.getContainer());
+    return () => ro.disconnect();
+  }, [map]);
+  return null;
+}
+
+// ─── Main component ──────────────────────────────────────────────────────────
+
+export const RiverMap: React.FC<RiverMapProps> = (props) => {
+  const [mapInstance, setMapInstance] = useState<L.Map | null>(null);
+  const [monitoringRivers, setMonitoringRivers] = useState<GeoJsonObject | null>(null);
+  const [showAllRivers, setShowAllRivers] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     fetch(GEOJSON_URL)
-      .then((r) => {
-        if (!r.ok) throw new Error(r.statusText);
-        return r.json();
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.statusText))))
+      .then((d) => {
+        if (!cancelled) setMonitoringRivers(d);
       })
-      .then((d) => { if (!cancelled) setArkavathiData(d); })
-      .catch((e) => console.warn('Arkavathi GeoJSON load error:', e));
-    return () => { cancelled = true; };
+      .catch((e) => console.warn('Monitoring rivers GeoJSON load error:', e));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  // Map station_code to its reading in selectedMonth
-  const readingsByStation = React.useMemo(() => {
-    const map = new Map<string, WaterReading>();
-    readings
-      .filter((r) => r.month === selectedMonth)
-      .forEach((r) => map.set(r.station_code, r));
-    return map;
-  }, [readings, selectedMonth]);
+  const fitKarnataka = useCallback(() => {
+    mapInstance?.fitBounds(KARNATAKA_BOUNDS, { padding: [12, 12] });
+  }, [mapInstance]);
 
   return (
-    <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-lg border border-slate-200 bg-white">
+    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-xs">
       <MapContainer
-        center={[20.5937, 78.9629]}
-        zoom={5}
+        ref={setMapInstance}
+        bounds={KARNATAKA_BOUNDS}
+        boundsOptions={{ padding: [12, 12] }}
+        minZoom={5}
+        keyboard={false}
         scrollWheelZoom
-        className="w-full h-full min-h-[500px]"
+        zoomSnap={0.5}
+        className="h-full w-full"
       >
-        {/* Base tiles */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          subdomains="abcd"
+          maxZoom={19}
         />
-
-        {/* National rivers — Canvas renderer, bottom layer */}
         <NationalRiversLayer url={RIVERS_URL} visible={showAllRivers} />
-
-        {/* Arkavathi / monitoring rivers — SVG, drawn on top */}
-        {arkavathiData && (
+        {monitoringRivers && (
           <GeoJSON
-            key={JSON.stringify(arkavathiData)}
-            data={arkavathiData}
-            style={{
-              color: '#0284c7',
-              weight: 5,
-              opacity: 0.85,
-              lineCap: 'round',
-              lineJoin: 'round',
-            }}
+            data={monitoringRivers}
+            style={{ color: '#4f46e5', weight: 3, opacity: 0.55, lineCap: 'round', lineJoin: 'round' }}
           />
         )}
-
-        {/* Station Markers */}
-        {stations.map((station) => {
-          const reading = readingsByStation.get(station.station_code);
-          const currentClass = reading ? reading.class : null;
-          const isSelected = selectedStationCode === station.station_code;
-          const classVisual = getClassConfig(currentClass);
-
-          return (
-            <Marker
-              key={station.station_code}
-              position={[station.lat, station.lng]}
-              icon={createStationIcon(currentClass, isSelected)}
-              eventHandlers={{
-                click: () => {
-                  if (onSelectStation) {
-                    onSelectStation(station.station_code);
-                  }
-                },
-              }}
-            >
-              <Tooltip direction="top" offset={[0, -20]} opacity={0.95}>
-                <div className="text-xs font-sans p-1">
-                  <div className="font-semibold text-slate-900">{station.station_name}</div>
-                  <div className="text-slate-600">
-                    River flow order: #{station.river_order ?? 'N/A'}
-                  </div>
-                  <div className="mt-1 flex items-center gap-1.5 font-medium">
-                    <span
-                      className="inline-block w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: classVisual.bgHex }}
-                    />
-                    <span>{classVisual.label}</span>
-                  </div>
-                </div>
-              </Tooltip>
-
-              <Popup>
-                <div className="p-1 max-w-xs font-sans">
-                  <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5 mb-2">
-                    <span className="text-[11px] font-mono uppercase tracking-wider text-slate-500 font-bold">
-                      {station.station_code}
-                    </span>
-                    <span
-                      className="px-2 py-0.5 text-xs font-bold rounded-full text-white"
-                      style={{ backgroundColor: classVisual.bgHex }}
-                    >
-                      Class {classVisual.letter}
-                    </span>
-                  </div>
-
-                  <h3 className="font-semibold text-sm text-slate-800 leading-tight mb-1">
-                    {station.station_name}
-                  </h3>
-
-                  <p className="text-xs text-slate-500 mb-2">
-                    Flow order #{station.river_order ?? 'N/A'} (1 = upstream)
-                  </p>
-
-                  {reading?.status === 'no_access' ? (
-                    <div className="bg-amber-50 text-amber-800 border border-amber-200 text-xs rounded p-2 mb-2">
-                      <strong>No Access:</strong> {reading.note || 'Site could not be sampled this month.'}
-                    </div>
-                  ) : reading ? (
-                    <div className="grid grid-cols-2 gap-1.5 bg-slate-50 p-2 rounded text-xs mb-2">
-                      <div>
-                        <span className="text-slate-500 block">DO (Oxygen):</span>
-                        <strong className="text-slate-800">
-                          {reading.do !== null ? `${reading.do} mg/L` : '—'}
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block">BOD (Waste):</span>
-                        <strong className="text-slate-800">
-                          {reading.bod !== null ? `${reading.bod} mg/L` : '—'}
-                        </strong>
-                      </div>
-                      <div className="col-span-2 pt-1 border-t border-slate-200">
-                        <span className="text-slate-500 block">Total Coliform:</span>
-                        <strong className="text-slate-800">
-                          {reading.total_coliform !== null
-                            ? `${reading.total_coliform.toLocaleString()} MPN/100ml`
-                            : '—'}
-                        </strong>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="bg-slate-100 text-slate-600 text-xs rounded p-2 mb-2">
-                      No measurements recorded for {selectedMonth}.
-                    </div>
-                  )}
-
-                  <div className="text-[11px] text-slate-500 italic">
-                    Month: {selectedMonth || 'N/A'}
-                  </div>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-
-        {/* Map controller — no DOM output */}
-        <MapController stations={stations} selectedStationCode={selectedStationCode} />
+        <StationsLayer {...props} />
+        <SizeWatcher />
       </MapContainer>
 
-      {/* ── Layer toggle — top-right overlay ─────────────────────────── */}
-      <div
-        className="absolute top-3 right-3 z-[400] bg-white/95 backdrop-blur-sm
-                   rounded-xl shadow-md border border-slate-200 px-3 py-2.5
-                   flex flex-col gap-1.5 text-xs pointer-events-auto"
-        role="group"
-        aria-label="Map layer controls"
-      >
-        <div className="font-semibold text-slate-700 mb-0.5 text-[11px] uppercase tracking-wide">
-          Layers
-        </div>
-
-        <label className="flex items-center gap-2 cursor-pointer select-none" htmlFor="toggle-all-rivers">
-          <button
-            id="toggle-all-rivers"
-            role="switch"
-            aria-checked={showAllRivers}
-            onClick={() => setShowAllRivers((v) => !v)}
-            className={`
-              relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent
-              transition-colors duration-200 focus:outline-none focus:ring-2
-              focus:ring-sky-500 focus:ring-offset-1
-              ${showAllRivers ? 'bg-sky-500' : 'bg-slate-300'}
-            `}
-          >
-            <span
-              className={`
-                pointer-events-none inline-block h-4 w-4 transform rounded-full
-                bg-white shadow transition-transform duration-200
-                ${showAllRivers ? 'translate-x-4' : 'translate-x-0'}
-              `}
-            />
-          </button>
-          <span className="text-slate-700 leading-tight">All rivers</span>
+      {/* Map tools */}
+      <div className="absolute left-14 top-3 z-[400] flex items-center gap-2">
+        <button
+          type="button"
+          onClick={fitKarnataka}
+          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white/95 px-2.5 text-xs font-medium text-slate-700 shadow-xs backdrop-blur hover:bg-white focus-visible:outline-2 focus-visible:outline-indigo-600"
+        >
+          <Maximize2 className="h-3.5 w-3.5" /> Karnataka
+        </button>
+        <label className="inline-flex h-8 cursor-pointer select-none items-center gap-2 rounded-lg border border-slate-200 bg-white/95 px-2.5 text-xs font-medium text-slate-700 shadow-xs backdrop-blur">
+          <input
+            type="checkbox"
+            checked={showAllRivers}
+            onChange={(e) => setShowAllRivers(e.target.checked)}
+            className="h-3.5 w-3.5 accent-indigo-600"
+          />
+          River lines
         </label>
-
-        <p className="text-[10px] text-slate-400 leading-snug max-w-[165px] mt-0.5 border-t border-slate-100 pt-1.5">
-          Water-quality readings currently cover{' '}
-          <span className="font-semibold text-slate-500">Karnataka only.</span>
-        </p>
       </div>
 
-      {/* ── Legend — bottom-left overlay ──────────────────────────────── */}
-      <div
-        className="absolute bottom-4 left-4 z-[400] bg-white/95 backdrop-blur-sm
-                   p-3 rounded-xl shadow-md border border-slate-200 text-xs
-                   max-w-xs pointer-events-auto"
-      >
-        <div className="font-semibold text-slate-800 mb-1.5 flex items-center justify-between">
-          <span>Water Quality Scale</span>
-          <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wide">
-            CPCB Classes
-          </span>
-        </div>
-        <p className="text-[11px] text-slate-500 mb-2">
-          Markers display letters and distinct hues for colour-blind accessibility.
-        </p>
-        <div className="grid grid-cols-3 gap-1.5">
-          {([
-            { cls: 'A', bg: 'bg-emerald-600', label: 'Pristine' },
-            { cls: 'B', bg: 'bg-sky-600',     label: 'Bathing' },
-            { cls: 'C', bg: 'bg-amber-600',   label: 'Drink treated' },
-            { cls: 'D', bg: 'bg-orange-600',  label: 'Fisheries' },
-            { cls: 'E', bg: 'bg-red-600',     label: 'Irrigation' },
-            { cls: '—', bg: 'bg-slate-500',   label: 'No data' },
-          ] as const).map(({ cls, bg, label }) => (
-            <div key={cls} className="flex items-center gap-1.5">
-              <span
-                className={`w-5 h-5 rounded-full ${bg} text-white font-bold
-                            flex items-center justify-center text-[10px] shrink-0`}
-              >
-                {cls}
-              </span>
-              <span className="text-slate-700 text-[11px]">{label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* River-line key */}
-        <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <div className="w-7 border-t-2 border-slate-400 opacity-60" />
-            <span className="text-[11px] text-slate-600">India rivers (background)</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-7 border-t-[4px] border-sky-500 rounded" />
-            <span className="text-[11px] text-slate-600">Monitoring rivers</span>
-          </div>
+      {/* Legend */}
+      <div className="absolute bottom-4 left-4 z-[400] hidden rounded-xl border border-slate-200 bg-white/95 p-3 text-xs shadow-xs backdrop-blur sm:block">
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">CPCB water class</div>
+        <div className="grid grid-cols-3 gap-x-4 gap-y-1.5">
+          {(
+            [
+              ['A', 'Pristine'],
+              ['B', 'Bathing'],
+              ['C', 'Treat to drink'],
+              ['D', 'Fish only'],
+              ['E', 'Irrigation'],
+              ['NONE', 'No data'],
+            ] as const
+          ).map(([k, label]) => {
+            const v = getClassConfig(k === 'NONE' ? null : k);
+            return (
+              <div key={k} className="flex items-center gap-1.5">
+                <span
+                  className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full text-[10px] font-bold text-white"
+                  style={{ background: v.bgHex }}
+                >
+                  {v.letter}
+                </span>
+                <span className="text-slate-700">{label}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

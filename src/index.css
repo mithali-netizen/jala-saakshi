@@ -20,62 +20,6 @@ html, body, #root {
   z-index: 10;
 }
 
-/* Custom Marker Styling */
-.station-marker-pin {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 9999px;
-  color: white;
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: -0.025em;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 0 0 3px rgba(255, 255, 255, 0.95);
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
-  cursor: pointer;
-}
-
-.station-marker-pin:hover {
-  transform: scale(1.18);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4), 0 0 0 4px rgba(255, 255, 255, 1);
-  z-index: 999;
-}
-
-.station-marker-pin.selected {
-  transform: scale(1.25);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45), 0 0 0 4px #38bdf8, 0 0 0 7px rgba(56, 189, 248, 0.4);
-}
-
-.marker-pulse-ring {
-  position: absolute;
-  top: -4px;
-  left: -4px;
-  right: -4px;
-  bottom: -4px;
-  border-radius: 9999px;
-  opacity: 0.4;
-  animation: marker-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  pointer-events: none;
-}
-
-@keyframes marker-pulse {
-  0% {
-    transform: scale(0.9);
-    opacity: 0.6;
-  }
-  70% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1.4);
-    opacity: 0;
-  }
-}
-
 /* ── River popup ─────────────────────────────────────────────────────────── */
 .river-popup .leaflet-popup-content-wrapper {
   border-radius: 10px;
@@ -90,4 +34,94 @@ html, body, #root {
 
 .river-popup .leaflet-popup-tip-container {
   margin-top: -1px;
+}
+
+/* ── Station markers (22px, letter kept for colour-blind readers) ───────────── */
+.stn-pin-wrap,
+.stn-cluster-wrap {
+  background: none;
+  border: 0;
+}
+
+.stn-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 0 0 2px #fff, 0 1px 4px rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+}
+
+.stn-pin.is-selected {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 5px #4f46e5, 0 2px 8px rgba(15, 23, 42, 0.4);
+}
+
+.stn-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #1e293b;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.9), 0 2px 6px rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+}
+
+.stn-tooltip.leaflet-tooltip {
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.3);
+}
+.stn-tooltip.leaflet-tooltip-top::before {
+  border-top-color: #0f172a;
+}
+
+.stn-tip {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 240px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: normal;
+}
+.stn-tip span {
+  color: #cbd5e1;
+}
+.stn-tip-class {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  color: #fff !important;
+  font-weight: 600;
+}
+.stn-tip-class i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+/* Smooth cluster zoom/spiderfy; no layout jump */
+.leaflet-marker-icon.stn-pin-wrap:focus,
+.leaflet-marker-icon.stn-cluster-wrap:focus {
+  outline: none;
 }
