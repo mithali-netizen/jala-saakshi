@@ -3,6 +3,7 @@ import "./jala.css";
 import Home from "./pages/Home";
 import Tracker from "./pages/Tracker";
 import Lake from "./pages/Lake";
+import Explorer from "./pages/Explorer";
 
 type Route = "home" | "lake" | "tracker" | "explorer";
 
@@ -60,7 +61,7 @@ export default function JalaApp() {
         {route === "home" && <Home />}
         {route === "tracker" && <Tracker />}
         {route === "lake" && <Lake />}
-        {route === "explorer" && <p className="text-sm text-muted">Coming in the next step.</p>}
+        {route === "explorer" && <Explorer />}
       </main>
       <footer className="mx-auto max-w-6xl px-4 pb-8 text-xs text-muted sm:px-6">
         Source: KSPCB monthly water quality reports. Readings are point-in-time samples. Items marked Demo or News
