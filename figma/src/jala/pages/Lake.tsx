@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import RainChart from "../components/RainChart";
 import SatelliteStrip from "../components/SatelliteStrip";
+import ComplaintCard from "../components/ComplaintCard";
 import { Card, SourceTag } from "../components/ui";
 import { DO_LOW_MG_L, RAIN_TRIGGER_MM, getRainfall, rainRuleMet, type RainResult } from "../services/rainfall";
 import { DODDAGUBBI_NAME, FIRST_DEAD_FISH, formatDay } from "../services/readings";
@@ -183,6 +184,8 @@ export default function Lake() {
         </div>
         <SatelliteStrip eventDate={FIRST_DEAD_FISH} />
       </Card>
+
+      <ComplaintCard />
     </div>
   );
 }
