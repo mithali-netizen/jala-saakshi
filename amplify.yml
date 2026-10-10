@@ -3,6 +3,11 @@ frontend:
   phases:
     preBuild:
       commands:
+        # Vite 8 requires Node ^20.19 || >=22.12. Amplify's default image can be older,
+        # so pin it here rather than let the build fail on an obscure syntax error.
+        - nvm install 22
+        - nvm use 22
+        - node -v
         - npm ci
     build:
       commands:
