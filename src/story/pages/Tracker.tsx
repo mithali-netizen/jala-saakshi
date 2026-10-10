@@ -1,7 +1,8 @@
 import { useData } from "../../context/DataContext";
 import { useMemo, useState } from "react";
 import { Card, DemoBadge } from "../components/ui";
-import { complaintRows, gapRows, type TrackerRow } from "../../services/tracker";
+import { complaintRows, gapRows, yourReportRows, type TrackerRow } from "../../services/tracker";
+import { useReports } from "../../services/reportStore";
 import { daysSince, formatDay } from "../../utils/dates";
 import { formatMonth } from "../../utils/months";
 
@@ -40,6 +41,11 @@ function Table({ rows, caption, empty }: { rows: TrackerRow[]; caption: string; 
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold text-ink">{r.what}</span>
                 {r.demo && <DemoBadge />}
+                {r.yours && (
+                  <span className="shrink-0 rounded-md border border-teal-300 bg-teal-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-teal-800">
+                    Your report
+                  </span>
+                )}
               </div>
               <p className="mt-0.5 text-xs leading-snug text-muted">{r.detail}</p>
             </div>
@@ -71,6 +77,8 @@ const SHOW_FIRST = 6;
 export default function Tracker() {
   const { stats, locations } = useData();
   const unmonitored = useMemo(() => gapRows(locations, stats), []);
+  const mine = useReports();
+  const yours = useMemo(() => yourReportRows(mine), [mine]);
   const reports = useMemo(() => complaintRows(), []);
   const [all, setAll] = useState(false);
   const shown = all ? unmonitored : unmonitored.slice(0, SHOW_FIRST);
@@ -120,6 +128,13 @@ export default function Tracker() {
           Seeded examples around the Doddagubbi fish kill, to show how the tracker will look. They are not real
           complaints.
         </p>
+        {yours.length > 0 && (
+          <div className="mb-4">
+            <h3 className="mb-1.5 text-xs font-bold uppercase tracking-wider text-muted">Made in this browser</h3>
+            <Table rows={yours} caption="Your reports" empty="None yet." />
+          </div>
+        )}
+        <h3 className="mb-1.5 text-xs font-bold uppercase tracking-wider text-muted">Seeded examples</h3>
         <Table rows={reports} caption="Citizen reports (demo)" empty="No reports yet." />
       </Card>
     </div>

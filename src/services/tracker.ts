@@ -3,6 +3,7 @@ import { formatMonth } from '../utils/months';
 import { daysSince, endOfMonthISO, formatDay } from '../utils/dates';
 import { hasValues, type MonitoringLocation } from '../utils/stations';
 import { DODDAGUBBI, FIRST_DEAD_FISH } from './doddagubbi';
+import type { CitizenReport } from './reportStore';
 import type { Stats } from './stats';
 
 /**
@@ -24,7 +25,10 @@ export interface TrackerRow {
   since: string;
   days: number;
   status: string;
+  /** Seeded example rather than something that happened. */
   demo: boolean;
+  /** Made by whoever is using this browser, in this prototype. */
+  yours?: boolean;
   /** Map entity to select when the row is clicked, if any. */
   targetId?: string;
 }
@@ -62,6 +66,22 @@ export function complaintRows(): TrackerRow[] {
     status: r.status,
     demo: true,
     targetId: /doddagubbi/i.test(r.what) ? DODDAGUBBI.id : undefined,
+  }));
+}
+
+/** Reports made in this browser. Real actions by the user, but not sent anywhere yet. */
+export function yourReportRows(reports: CitizenReport[]): TrackerRow[] {
+  return reports.map((r) => ({
+    id: r.id,
+    kind: 'complaint' as const,
+    what: `${r.lakeName}: ${r.issues.join(', ') || 'report'}`,
+    detail: `${r.photo ? 'Photo attached. ' : ''}Drafted for ${r.sentTo.join(', ')}. Saved in this browser; send it from your own email app to start the clock for real.`,
+    since: r.date,
+    days: daysSince(r.date),
+    status: r.status,
+    demo: false,
+    yours: true,
+    targetId: r.lakeId,
   }));
 }
 

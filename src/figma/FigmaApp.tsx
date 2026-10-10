@@ -2,6 +2,27 @@ import { useEffect, useState, type ReactNode } from "react";
 import "./figma.css";
 import { APP_NAME, DEMO_CASE_PREFIX } from "../brand";
 import { DEMO_WATCHED_LAKES, DEMO_WATCHLIST_RISK, WATCHED_LAKES_LABEL } from "../demo/watchlist";
+import { useData } from "../context/DataContext";
+import { AUTHORITIES, addReport, readPhoto, useReports, type CitizenReport } from "../services/reportStore";
+import { complaintMailto } from "../services/complaint";
+import { daysSince, formatDay, todayISO } from "../utils/dates";
+import type { Lake } from "../services/lakes";
+
+/** A report being filled in. Lives above the screens so Review can see what Report collected. */
+export interface Draft {
+  lake: Lake | null;
+  issues: string[];
+  note: string;
+  photo: string | null;
+  date: string;
+}
+
+export const emptyDraft = (): Draft => ({ lake: null, issues: [], note: "", photo: null, date: todayISO() });
+
+/** Shown wherever a report is created or listed. There is no server behind any of it. */
+function PrototypeNote({ children }: { children?: ReactNode }) {
+  return <div className="proto-note"><Icon name="shield" /><p>{children ?? <><strong>Prototype.</strong> Reports are saved in this browser only. Nothing is sent to any authority until you send it yourself.</>}</p></div>;
+}
 
 type Screen =
   | "home"
@@ -228,40 +249,147 @@ function LakeDetailsScreen({ navigate }: { navigate: (screen: Screen) => void })
 
 const issues = ["Dead fish", "Froth", "Sewage inflow", "Algae", "Foul smell", "Floating waste", "Illegal dumping", "Other"];
 
-function ReportScreen({ navigate }: { navigate: (screen: Screen) => void }) {
-  const [selected, setSelected] = useState("Froth");
+function LakePicker({ value, onPick }: { value: Lake | null; onPick: (l: Lake) => void }) {
+  const { lakes } = useData();
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const matches = (lakes ?? [])
+    .filter((l) => l.name.toLowerCase().includes(query.trim().toLowerCase()))
+    .slice(0, 8);
+
+  if (!lakes) return <div className="field compact">Loading lakes…</div>;
+
+  return <div className="lake-picker">
+    <div className="field">
+      <Icon name="location" />
+      <input
+        type="text"
+        value={open ? query : (value?.name ?? query)}
+        placeholder={`Search ${lakes.length} Bengaluru lakes`}
+        onFocus={() => { setOpen(true); setQuery(""); }}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        aria-label="Choose a lake"
+      />
+    </div>
+    {open && <ul className="lake-options">
+      {matches.length === 0 && <li className="empty">No lake matches “{query}”</li>}
+      {matches.map((l) => <li key={l.id}>
+        <button type="button" onClick={() => { onPick(l); setOpen(false); setQuery(""); }}>
+          {l.name}<small>no reading in KSPCB&rsquo;s monthly river reports</small>
+        </button>
+      </li>)}
+    </ul>}
+  </div>;
+}
+
+function ReportScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen) => void; draft: Draft; setDraft: (d: Draft) => void }) {
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const toggleIssue = (issue: string) => setDraft({
+    ...draft,
+    issues: draft.issues.includes(issue) ? draft.issues.filter((i) => i !== issue) : [...draft.issues, issue],
+  });
+
+  const onPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setBusy(true); setPhotoError(null);
+    try {
+      setDraft({ ...draft, photo: await readPhoto(file) });
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Could not read that photo.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const ready = !!draft.lake && draft.issues.length > 0;
+
   return <MobileFrame active="report" navigate={navigate}>
-    <MobileHeader title="Report pollution" onBack={() => navigate("home")} action={<DemoTag />} />
+    <MobileHeader title="Report a problem" onBack={() => navigate("home")} />
     <div className="screen-body form-screen">
-      <div className="intro-copy"><h1>What did you notice?</h1><p>Your observation can help responders identify issues sooner. This demo does not send a real complaint.</p></div>
-      <button className="photo-upload" type="button"><span><Icon name="camera" className="size-7" /></span><strong>Add a photo</strong><small>Take a photo or choose from library</small></button>
-      <div className="field-group"><label>Issue type</label><div className="issue-grid">{issues.map((issue) => <button type="button" key={issue} className={selected === issue ? "selected" : ""} onClick={() => setSelected(issue)}>{issue}</button>)}</div></div>
-      <div className="field-group"><label>Location</label><div className="field"><Icon name="location" /><div><strong>Bellandur Lake</strong><span>Near eastern inlet · Demo location</span></div><Icon name="arrow" /></div></div>
-      <div className="two-fields"><div className="field-group"><label>Date</label><div className="field compact">18 Jun 2025</div></div><div className="field-group"><label>Time</label><div className="field compact">10:42 AM</div></div></div>
-      <div className="field-group"><label htmlFor="description">Description <span>Optional</span></label><textarea id="description" placeholder="Add a short note about what you saw" rows={3} /></div>
-      <div className="privacy-note"><Icon name="shield" /><p>Your report remains demo data and is not shared with any authority.</p></div>
-      <Button className="full" onClick={() => navigate("review")}>Review report <Icon name="arrow" /></Button>
+      <div className="intro-copy"><h1>What did you notice?</h1><p>Your report is saved in this browser and used to draft a complaint you send yourself.</p></div>
+
+      <label className="photo-upload" htmlFor="report-photo">
+        {draft.photo
+          ? <img className="photo-preview" src={draft.photo} alt="The photo you attached" />
+          : <><span><Icon name="camera" className="size-7" /></span><strong>{busy ? "Reading photo…" : "Add a photo"}</strong><small>Camera on a phone, file picker on a computer</small></>}
+      </label>
+      <input id="report-photo" className="visually-hidden" type="file" accept="image/*" capture="environment" onChange={onPhoto} />
+      {draft.photo && <button type="button" className="text-button" onClick={() => setDraft({ ...draft, photo: null })}>Remove photo</button>}
+      {photoError && <p className="field-error">{photoError}</p>}
+
+      <div className="field-group"><label>Lake</label><LakePicker value={draft.lake} onPick={(l) => setDraft({ ...draft, lake: l })} /></div>
+
+      <div className="field-group">
+        <label>What did you see? <span>Choose all that apply</span></label>
+        <div className="issue-grid">{issues.map((issue) => <button type="button" key={issue} className={draft.issues.includes(issue) ? "selected" : ""} onClick={() => toggleIssue(issue)}>{issue}</button>)}</div>
+      </div>
+
+      <div className="field-group">
+        <label htmlFor="report-date">Date observed</label>
+        <input id="report-date" className="field compact" type="date" value={draft.date} max={todayISO()} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
+      </div>
+
+      <div className="field-group">
+        <label htmlFor="description">Description <span>Optional</span></label>
+        <textarea id="description" placeholder="Add a short note about what you saw" rows={3} value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} />
+      </div>
+
+      <PrototypeNote />
+      <Button className="full" onClick={() => ready && navigate("review")}>
+        {ready ? <>Review report <Icon name="arrow" /></> : "Choose a lake and what you saw"}
+      </Button>
     </div>
   </MobileFrame>;
 }
 
-function ReviewScreen({ navigate }: { navigate: (screen: Screen) => void }) {
-  const [uncertain, setUncertain] = useState(false);
+function ReviewScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen) => void; draft: Draft; setDraft: (d: Draft) => void }) {
+  const [warning, setWarning] = useState<string | null>(null);
+
+  const submit = () => {
+    if (!draft.lake) return navigate("report");
+    const { warning: w } = addReport({
+      lakeId: draft.lake.id,
+      lakeName: draft.lake.name,
+      lat: draft.lake.lat,
+      lng: draft.lake.lng,
+      issues: draft.issues,
+      note: draft.note,
+      photo: draft.photo,
+      date: draft.date,
+    });
+    setWarning(w);
+    setDraft(emptyDraft());
+    navigate("tracking");
+  };
+
   return <MobileFrame navigate={navigate}>
-    <MobileHeader title="Review evidence" onBack={() => navigate("report")} action={<span className="ai-chip"><Icon name="sparkle" className="size-4" /> AI assist</span>} />
+    <MobileHeader title="Review report" onBack={() => navigate("report")} />
     <div className="screen-body review-screen">
-      <div className="intro-copy"><h1>Check before you continue</h1><p>AI suggestions can be wrong. Confirm what the photo appears to show.</p></div>
-      <div className="evidence-photo"><img src={LAKE_IMAGE} alt="Demo report evidence preview" /><span className="image-label">UPLOADED PHOTO · DEMO</span></div>
-      <Card className="ai-card">
-        <div className="ai-card-head"><span className="ai-icon"><Icon name="sparkle" /></span><div><div className="eyebrow">Suggested classification</div><h2>{uncertain ? "Uncertain observation" : "Surface froth"}</h2></div><div className="confidence"><strong>{uncertain ? "—" : "84%"}</strong><span>confidence</span></div></div>
-        <div className="confidence-bar"><span className={uncertain ? "uncertain" : ""} /></div>
-        <p>The image appears to show a light-colored surface layer near the shore. This visual suggestion does not prove chemical contamination or indicate oxygen levels.</p>
-        <div className="ai-actions"><Button variant="secondary" onClick={() => navigate("report")}>Edit classification</Button><Button variant={uncertain ? "primary" : "ghost"} onClick={() => setUncertain(!uncertain)}>{uncertain ? "Marked uncertain" : "Mark uncertain"}</Button></div>
+      <div className="intro-copy"><h1>Check before you submit</h1><p>This is what will be saved and used to draft your complaint.</p></div>
+
+      {draft.photo
+        ? <div className="evidence-photo"><img src={draft.photo} alt="The photo you attached" /><span className="image-label">YOUR PHOTO</span></div>
+        : <div className="evidence-photo empty"><p>No photo attached</p></div>}
+
+      <Card className="review-summary">
+        <dl>
+          <div><dt>Lake</dt><dd>{draft.lake?.name ?? "Not chosen"}</dd></div>
+          <div><dt>What you saw</dt><dd>{draft.issues.length ? draft.issues.join(", ") : "Not chosen"}</dd></div>
+          <div><dt>Date observed</dt><dd>{formatDay(draft.date)}</dd></div>
+          {draft.note.trim() && <div><dt>Note</dt><dd>{draft.note.trim()}</dd></div>}
+          <div><dt>Will be addressed to</dt><dd>{AUTHORITIES.join(", ")}</dd></div>
+        </dl>
       </Card>
-      <SectionTitle>Possible duplicates</SectionTitle>
-      <Card className="duplicate-row"><div className="mini-photo"><img src={LAKE_IMAGE} alt="" /></div><div><h3>Froth near eastern inlet</h3><p>240 m away · 32 min ago</p></div><Badge tone="elevated">Similar</Badge></Card>
-      <div className="review-disclaimer"><Icon name="shield" /><div><strong>AI suggestion · demo only</strong><p>A reviewer should assess this evidence independently.</p></div></div>
-      <Button className="full" onClick={() => navigate("tracking")}>Submit demo report</Button>
+
+      <div className="review-disclaimer"><Icon name="shield" /><div><strong>No automatic classification</strong><p>Reading the photo automatically is not connected in this prototype. What you selected is what gets recorded.</p></div></div>
+
+      {warning && <p className="field-error">{warning}</p>}
+      <PrototypeNote />
+      <Button className="full" onClick={submit}>Save report</Button>
     </div>
   </MobileFrame>;
 }
@@ -277,21 +405,51 @@ function StatusTimeline({ compact = false }: { compact?: boolean }) {
   return <div className={`timeline ${compact ? "compact" : ""}`}>{timeline.map((item, i) => <div className={`timeline-item ${item.done ? "done" : ""}`} key={item.title}><div className="timeline-track"><span>{item.done ? <Icon name="check" className="size-3" /> : i + 1}</span></div><div><h3>{item.title}</h3><p>{item.detail}</p><small>{item.time}</small></div></div>)}</div>;
 }
 
+function StatusPill({ status }: { status: CitizenReport["status"] }) {
+  const tone = status === "Action taken" ? "low" : status === "Acknowledged" ? "teal" : status === "Sent" ? "blue" : "neutral";
+  return <Badge tone={tone}>{status}</Badge>;
+}
+
+function ReportCard({ report }: { report: CitizenReport }) {
+  const { locations, stats } = useData();
+  const days = daysSince(report.date);
+  return <Card className="report-summary">
+    <div className="report-summary-top">
+      <div><div className="eyebrow">{report.id}</div><h1>{report.issues.join(", ") || "Report"}</h1></div>
+      <StatusPill status={report.status} />
+    </div>
+    <div className="report-meta">
+      <span><Icon name="location" className="size-4" /> {report.lakeName}</span>
+      <span><Icon name="clock" className="size-4" /> {formatDay(report.date)} · {days} day{days === 1 ? "" : "s"} ago</span>
+    </div>
+    {report.note.trim() && <p className="report-note">{report.note.trim()}</p>}
+    {report.photo && <div className="evidence-strip"><img src={report.photo} alt={`Photo attached to ${report.id}`} /><div><strong>1 photo attached</strong><span>Stored in this browser</span></div></div>}
+    <a className="btn btn-primary full" href={complaintMailto(report, locations, stats)}>
+      <Icon name="file" /> Open complaint in your email app
+    </a>
+    <p className="muted small">Addressed to {AUTHORITIES.join(", ")}. You review and send it; nothing is sent for you.</p>
+  </Card>;
+}
+
 function TrackingScreen({ navigate }: { navigate: (screen: Screen) => void }) {
+  const reports = useReports();
   return <MobileFrame active="tracking" navigate={navigate}>
-    <MobileHeader title="My reports" onBack={() => navigate("home")} action={<button className="icon-btn" aria-label="Filter reports"><Icon name="filter" /></button>} />
+    <MobileHeader title="My reports" onBack={() => navigate("home")} />
     <div className="screen-body tracking-screen">
-      <div className="report-tabs"><button className="active">Active <span>2</span></button><button>Resolved <span>1</span></button></div>
-      <Card className="report-summary">
-        <div className="report-summary-top"><div><div className="eyebrow">Report #{DEMO_CASE_PREFIX}-1048 · DEMO</div><h1>Possible surface froth</h1></div><Badge tone="blue">Acknowledged</Badge></div>
-        <div className="report-meta"><span><Icon name="location" className="size-4" /> Bellandur Lake</span><span><Icon name="clock" className="size-4" /> Today, 10:44 AM</span></div>
-        <div className="evidence-strip"><img src={LAKE_IMAGE} alt="Report evidence thumbnail" /><div><strong>1 photo attached</strong><span>User-submitted evidence</span></div></div>
-      </Card>
-      <div className="ack-note"><Icon name="bell" /><p><strong>Acknowledged does not mean resolved.</strong> It only indicates that the demo report entered the review queue.</p></div>
-      <SectionTitle>Incident timeline</SectionTitle>
-      <Card className="timeline-card"><StatusTimeline /></Card>
-      <SectionTitle>Latest update</SectionTitle>
-      <Card className="latest-update"><div className="update-avatar">BB</div><div><div className="eyebrow">Demo authority status · 11:02 AM</div><h3>Report added to review queue</h3><p>No inspection or resolution has been recorded.</p></div></Card>
+      {reports.length === 0
+        ? <div className="empty-state">
+            <span><Icon name="file" className="size-7" /></span>
+            <h2>No reports yet</h2>
+            <p>Reports you make are saved in this browser and listed here.</p>
+            <Button className="full" icon="camera" onClick={() => navigate("report")}>Report a problem</Button>
+          </div>
+        : <>
+            <div className="report-tabs"><button className="active">All <span>{reports.length}</span></button></div>
+            {reports.map((r) => <ReportCard key={r.id} report={r} />)}
+            <div className="ack-note"><Icon name="bell" /><p><strong>Acknowledged would not mean resolved.</strong> No status here is set by an authority — this prototype has no connection to one.</p></div>
+            <Button className="full" icon="camera" onClick={() => navigate("report")}>Report another problem</Button>
+          </>}
+      <PrototypeNote />
     </div>
   </MobileFrame>;
 }
@@ -314,12 +472,13 @@ const incidents = [
 ];
 
 function AuthorityDashboard({ navigate }: { navigate: (screen: Screen) => void }) {
+  const live = useReports();
   return <AuthorityShell navigate={navigate}>
     <header className="desktop-header"><div><p>Wednesday, 18 June</p><h1>Incident overview</h1></div><div className="desktop-actions"><div className="search-field"><Icon name="search" /><span>Search incidents or lakes</span><kbd>⌘ K</kbd></div><button className="icon-btn"><Icon name="bell" /></button></div></header>
     <div className="authority-content">
       <div className="notice-bar"><Icon name="shield" /><span>This workspace uses simulated incidents and statuses for demonstration only.</span><DemoTag /></div>
       <div className="metrics">
-        <Card><span className="metric-icon red"><Icon name="file" /></span><div><p>Open incidents</p><strong>18</strong><small>+4 today</small></div></Card>
+        <Card><span className="metric-icon red"><Icon name="file" /></span><div><p>Open incidents</p><strong>{18 + live.length}</strong><small>{live.length} from this browser · 18 seeded</small></div></Card>
         <Card><span className="metric-icon amber"><Icon name="bell" /></span><div><p>High-risk cases</p><strong>6</strong><small>2 unreviewed</small></div></Card>
         <Card><span className="metric-icon blue"><Icon name="check" /></span><div><p>Acknowledged</p><strong>9</strong><small>50% of open</small></div></Card>
         <Card><span className="metric-icon green"><Icon name="shield" /></span><div><p>Verified resolutions</p><strong>12</strong><small>Last 30 days</small></div></Card>
@@ -328,8 +487,10 @@ function AuthorityDashboard({ navigate }: { navigate: (screen: Screen) => void }
         <Card className="authority-map-card"><div className="panel-head"><div><h2>Lake risk map</h2><p>{DEMO_WATCHED_LAKES} {WATCHED_LAKES_LABEL} · Demo data · none in KSPCB's monthly river reports</p></div><Button variant="secondary" icon="filter">Filters</Button></div><MapCanvas compact /><div className="map-legend"><span><i className="dot high" />High {DEMO_WATCHLIST_RISK.high}</span><span><i className="dot elevated" />Elevated {DEMO_WATCHLIST_RISK.elevated}</span><span><i className="dot low" />Low {DEMO_WATCHLIST_RISK.low}</span><button>View full map <Icon name="arrow" className="size-4" /></button></div></Card>
         <Card className="priority-card"><div className="panel-head"><div><h2>Priority case</h2><p>Highest current demo signal</p></div><Badge tone="high">High risk</Badge></div><div className="priority-image"><img src={LAKE_IMAGE} alt="Bellandur Lake" /><span>USER-SUBMITTED</span></div><h3>Possible surface froth</h3><p className="priority-location"><Icon name="location" className="size-4" /> Bellandur Lake · Eastern inlet</p><div className="freshness"><span><Icon name="users" />6 citizen reports</span><span><Icon name="clock" />18m old</span></div><Button className="full" onClick={() => navigate("incident")}>Open case <Icon name="arrow" /></Button></Card>
       </div>
-      <Card className="queue-card"><div className="panel-head"><div><h2>Incident queue</h2><p>Prioritized by risk, recency, and report volume</p></div><div className="panel-actions"><Button variant="secondary" icon="filter">All statuses</Button><Button variant="secondary">Newest first</Button></div></div>
-        <div className="incident-table"><div className="table-row table-head"><span>Incident</span><span>Lake</span><span>Risk</span><span>Freshness</span><span>Status</span><span /></div>{incidents.map((item) => <button className="table-row" key={item.id} onClick={() => navigate("incident")}><span><strong>{item.title}</strong><small>{item.id} · Demo</small></span><span>{item.lake}</span><span><Badge tone={item.level === "High" ? "high" : item.level === "Elevated" ? "elevated" : "low"}>{item.level}</Badge></span><span>{item.age}</span><span><Badge tone="blue">{item.status}</Badge></span><span><Icon name="arrow" /></span></button>)}</div>
+      <Card className="queue-card"><div className="panel-head"><div><h2>Incident queue</h2><p>{live.length > 0 ? `${live.length} citizen report${live.length === 1 ? "" : "s"} from this browser, then seeded cases` : "Seeded cases · no citizen reports in this browser yet"}</p></div><div className="panel-actions"><Button variant="secondary" icon="filter">All statuses</Button><Button variant="secondary">Newest first</Button></div></div>
+        <div className="incident-table"><div className="table-row table-head"><span>Incident</span><span>Lake</span><span>Risk</span><span>Freshness</span><span>Status</span><span /></div>
+          {live.map((r) => <div className="table-row" key={r.id}><span><strong>{r.issues.join(", ") || "Report"}</strong><small>{r.id} · Citizen report</small></span><span>{r.lakeName}</span><span><Badge tone="neutral">Not assessed</Badge></span><span>{daysSince(r.date)}d</span><span><StatusPill status={r.status} /></span><span>{r.photo ? <img className="queue-thumb" src={r.photo} alt="" /> : null}</span></div>)}
+          {incidents.map((item) => <button className="table-row" key={item.id} onClick={() => navigate("incident")}><span><strong>{item.title}</strong><small>{item.id} · Demo</small></span><span>{item.lake}</span><span><Badge tone={item.level === "High" ? "high" : item.level === "Elevated" ? "elevated" : "low"}>{item.level}</Badge></span><span>{item.age}</span><span><Badge tone="blue">{item.status}</Badge></span><span><Icon name="arrow" /></span></button>)}</div>
       </Card>
     </div>
   </AuthorityShell>;
@@ -371,17 +532,35 @@ const SCREEN_PATHS: Record<Screen, string> = {
 };
 
 function screenFromHash(hash: string): Screen {
-  const found = (Object.keys(SCREEN_PATHS) as Screen[]).find((key) => SCREEN_PATHS[key] === hash);
-  return found ?? (hash.startsWith("#/authority") ? "authority" : "home");
+  const path = hash.split("?")[0];
+  const found = (Object.keys(SCREEN_PATHS) as Screen[]).find((key) => SCREEN_PATHS[key] === path);
+  return found ?? (path.startsWith("#/authority") ? "authority" : "home");
+}
+
+/** ?lake=<osm id> from a lake panel on the dashboard. */
+function lakeIdFromHash(hash: string): string | null {
+  const q = hash.split("?")[1];
+  return q ? new URLSearchParams(q).get("lake") : null;
 }
 
 export default function FigmaApp() {
   const [screen, setScreen] = useState<Screen>(() => screenFromHash(window.location.hash));
+  const [draft, setDraft] = useState<Draft>(emptyDraft);
+  const { lakes } = useData();
+
   useEffect(() => {
     const onHash = () => setScreen(screenFromHash(window.location.hash));
     window.addEventListener("hashchange", onHash);
     return () => window.removeEventListener("hashchange", onHash);
   }, []);
+
+  // Arriving from a lake panel on the dashboard: start the draft on that lake.
+  const wantedLake = lakeIdFromHash(window.location.hash);
+  useEffect(() => {
+    if (!wantedLake || !lakes) return;
+    const found = lakes.find((l) => l.id === wantedLake);
+    if (found) setDraft((d) => (d.lake?.id === found.id ? d : { ...d, lake: found }));
+  }, [wantedLake, lakes]);
   const navigate = (next: Screen) => {
     window.location.hash = SCREEN_PATHS[next];
     window.scrollTo({ top: 0 });
@@ -390,8 +569,8 @@ export default function FigmaApp() {
     home: <HomeScreen navigate={navigate} />,
     map: <MapScreen navigate={navigate} />,
     lake: <LakeDetailsScreen navigate={navigate} />,
-    report: <ReportScreen navigate={navigate} />,
-    review: <ReviewScreen navigate={navigate} />,
+    report: <ReportScreen navigate={navigate} draft={draft} setDraft={setDraft} />,
+    review: <ReviewScreen navigate={navigate} draft={draft} setDraft={setDraft} />,
     tracking: <TrackingScreen navigate={navigate} />,
     authority: <AuthorityDashboard navigate={navigate} />,
     incident: <IncidentScreen navigate={navigate} />,

@@ -239,3 +239,39 @@ textarea, select { width: 100%; padding: .75rem; resize: vertical; color: var(--
 /* Watchlist count vs KSPCB coverage — the two numbers must not read as one. */
 .coverage-note { margin-top: .5rem; color: rgba(255,255,255,.78); font-size: .63rem; line-height: 1.35; }
 .coverage-note strong { color: #fff; }
+
+/* ── Report loop ─────────────────────────────────────────────────────────────
+   Added for the wired report flow: lake picker, real photo, saved reports. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+.proto-note { margin: .9rem 0; padding: .6rem .7rem; display: flex; gap: .5rem; align-items: flex-start; color: #3f3f46; background: #fafaf9; border: 1px solid var(--color-line); border-radius: .65rem; font-size: .66rem; line-height: 1.45; }
+.proto-note svg { width: 1rem; flex-shrink: 0; color: var(--color-brand); }
+
+.photo-preview { width: 100%; height: 11rem; object-fit: cover; border-radius: .7rem; }
+.field-error { margin: .4rem 0 0; color: #b91c1c; font-size: .68rem; }
+
+.lake-picker { position: relative; }
+.lake-picker .field input { width: 100%; border: 0; outline: none; background: transparent; font-size: .8rem; color: var(--color-ink); }
+.lake-options { position: absolute; z-index: 20; top: calc(100% + .25rem); left: 0; right: 0; max-height: 14rem; overflow-y: auto; margin: 0; padding: .25rem; list-style: none; background: #fff; border: 1px solid var(--color-line); border-radius: .7rem; box-shadow: 0 12px 28px rgba(15,23,42,.14); }
+.lake-options li.empty { padding: .6rem; color: var(--color-muted); font-size: .7rem; }
+.lake-options button { width: 100%; padding: .5rem .6rem; display: block; text-align: left; background: transparent; border: 0; border-radius: .5rem; font-size: .76rem; font-weight: 600; color: var(--color-ink); }
+.lake-options button:hover { background: var(--color-brand-soft); }
+.lake-options button small { display: block; margin-top: .1rem; color: var(--color-muted); font-size: .6rem; font-weight: 500; }
+
+.evidence-photo.empty { display: grid; place-items: center; height: 7rem; color: var(--color-muted); background: #f8fafc; border: 1px dashed var(--color-line); border-radius: .8rem; font-size: .72rem; }
+
+.review-summary dl { margin: 0; display: grid; gap: .55rem; }
+.review-summary dl > div { display: grid; grid-template-columns: 8.5rem 1fr; gap: .5rem; }
+.review-summary dt { color: var(--color-muted); font-size: .66rem; }
+.review-summary dd { margin: 0; font-size: .74rem; font-weight: 600; color: var(--color-ink); }
+
+.report-note { margin: .5rem 0 0; color: #475569; font-size: .72rem; line-height: 1.5; }
+.report-summary .btn { margin-top: .75rem; text-decoration: none; }
+.muted.small { margin-top: .4rem; color: var(--color-muted); font-size: .62rem; line-height: 1.45; }
+
+.empty-state { padding: 2.5rem 1rem; display: grid; justify-items: center; gap: .5rem; text-align: center; }
+.empty-state > span { width: 3.25rem; height: 3.25rem; display: grid; place-items: center; color: var(--color-brand); background: var(--color-brand-soft); border-radius: 999px; }
+.empty-state h2 { font-size: 1rem; }
+.empty-state p { max-width: 17rem; color: var(--color-muted); font-size: .74rem; line-height: 1.5; }
+.empty-state .btn { margin-top: .75rem; }
+.queue-thumb { width: 2rem; height: 2rem; object-fit: cover; border-radius: .35rem; border: 1px solid var(--color-line); }
