@@ -77,7 +77,7 @@ export default function Tracker() {
   const today = formatDay(new Date().toISOString().slice(0, 10));
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header className="max-w-3xl">
         <p className="text-xs font-bold uppercase tracking-widest text-brand">Accountability tracker</p>
         <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight sm:text-3xl">

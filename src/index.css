@@ -14,6 +14,22 @@
   --color-line: #e2e8f0;
 }
 
+/* ── Page shell ───────────────────────────────────────────────────────────────
+   One container for every surface so nothing runs to the screen edge.
+   16px of gutter on a phone, more as the viewport grows.
+   `.shell` is the reading width (story, landing); `.shell-wide` is the dense
+   dashboard. The phone frame keeps its own internal padding and ignores both. */
+.shell {
+  width: 100%;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+.shell-wide { max-width: 96rem; }
+
+@media (min-width: 640px) { .shell { padding-inline: 1.5rem; } }
+@media (min-width: 1280px) { .shell { padding-inline: 2rem; } }
+
 /* Buttons used by the story pages; same shape as the mock-up's .btn. */
 .btn {
   min-height: 2.5rem;

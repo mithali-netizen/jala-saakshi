@@ -49,7 +49,7 @@ export default function Explorer() {
   const aug = kanakapura?.byMonth.get(last);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header className="max-w-3xl">
         <p className="text-xs font-bold uppercase tracking-widest text-brand">KSPCB explorer</p>
         <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight sm:text-3xl">What the monthly reports say</h1>
@@ -145,7 +145,7 @@ export default function Explorer() {
             </div>
             <SourceTag>KSPCB dataset</SourceTag>
           </div>
-          <div className="space-y-5">
+          <div className="space-y-6">
             <TimeChart
               points={series("do")}
               label="Dissolved oxygen (DO), mg/L"

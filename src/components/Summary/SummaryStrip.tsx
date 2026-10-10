@@ -60,7 +60,7 @@ export const SummaryStrip: React.FC<SummaryStripProps> = ({ stats, locations, mo
       className={show === 'both' ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]' : 'contents'}
     >
       {show !== 'worst' && (
-      <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <div className="mb-2 flex items-baseline justify-between gap-2">
           <h2 className="text-sm font-bold text-slate-900">
             {total} of {stats.locations} points in the {formatMonth(selectedMonth)} report

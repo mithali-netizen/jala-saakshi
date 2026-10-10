@@ -70,7 +70,7 @@ export const App: React.FC = () => {
   return (
     <div className="flex min-h-screen flex-col bg-slate-100 font-sans text-slate-800">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-[112rem] flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 sm:px-6">
+        <div className="shell shell-wide flex flex-wrap items-center gap-x-5 gap-y-2 py-3">
           <div className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-[0.6rem_0.6rem_0.6rem_0.15rem] bg-teal-700 text-white">
               <Droplet className="h-[18px] w-[18px]" aria-hidden />
@@ -145,7 +145,7 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-[112rem] flex-1 flex-col gap-3 px-4 py-3 sm:px-6">
+      <main className="shell shell-wide flex flex-1 flex-col gap-4 py-5">
         {isLoading && (
           <>
             <Skeleton className="h-[92px]" />
@@ -186,7 +186,7 @@ export const App: React.FC = () => {
               selectedMonth={selectedMonth}
             />
 
-            <div className="grid flex-1 gap-3 lg:grid-cols-[minmax(0,1fr)_21rem]">
+            <div className="grid flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_21rem]">
               <div className="relative h-[56vh] min-h-[420px] lg:h-auto lg:min-h-[520px]">
                 <RiverMap
                   locations={locations}
@@ -220,7 +220,7 @@ export const App: React.FC = () => {
                 )}
               </div>
 
-              <aside className="flex flex-col gap-3" aria-label="Month summary">
+              <aside className="flex flex-col gap-4" aria-label="Month summary">
                 <SummaryStrip
                   show="classes"
                   stats={stats}
@@ -245,8 +245,8 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      <footer className="border-t border-slate-200 bg-white px-4 py-2.5 text-[11px] text-slate-500 sm:px-6">
-        <div className="mx-auto max-w-[112rem]">
+      <footer className="mt-2 border-t border-slate-200 bg-white py-3.5 text-[11px] text-slate-500">
+        <div className="shell shell-wide">
           KSPCB monthly water quality reports, point-in-time samples. Only months with data are shown. Anything marked
           Demo is seeded and not from that dataset.
         </div>

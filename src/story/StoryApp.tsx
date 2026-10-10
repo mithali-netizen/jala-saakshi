@@ -30,7 +30,7 @@ export const StoryApp: React.FC<{ route: StoryRoute }> = ({ route }) => {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
       <header className="sticky top-0 z-[1000] border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-4 py-2.5 sm:px-6">
+        <div className="shell flex flex-wrap items-center justify-between gap-x-6 gap-y-1 py-3">
           <a href="#/dashboard" className="flex items-center gap-2 text-sm font-semibold text-slate-700 no-underline hover:text-teal-800">
             <ArrowLeft className="h-4 w-4" aria-hidden />
             <span className="font-bold text-slate-900">{APP_NAME}</span>
@@ -53,7 +53,7 @@ export const StoryApp: React.FC<{ route: StoryRoute }> = ({ route }) => {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+      <main className="shell flex-1 py-8">
         {isLoading && <div className="h-96 animate-pulse rounded-2xl bg-slate-200/70" />}
         {!isLoading && error && (
           <p className="rounded-2xl border border-rose-200 bg-white p-6 text-sm text-rose-900">{error}</p>
@@ -68,7 +68,7 @@ export const StoryApp: React.FC<{ route: StoryRoute }> = ({ route }) => {
         )}
       </main>
 
-      <footer className="mx-auto w-full max-w-6xl px-4 pb-8 text-xs text-slate-500 sm:px-6">
+      <footer className="shell pb-10 pt-2 text-xs text-slate-500">
         Source: KSPCB monthly water quality reports. Readings are point-in-time samples. Items marked Demo or News
         coverage are not part of that dataset.
       </footer>

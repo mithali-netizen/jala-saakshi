@@ -16,7 +16,7 @@ export const SourceTag = ({ children }: { children: ReactNode }) => (
 );
 
 export const Card = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
-  <section className={`rounded-2xl border border-line bg-white p-4 shadow-xs sm:p-5 ${className}`}>{children}</section>
+  <section className={`rounded-2xl border border-line bg-white p-5 shadow-xs sm:p-6 ${className}`}>{children}</section>
 );
 
 export const Stat = ({

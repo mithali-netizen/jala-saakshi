@@ -20,7 +20,7 @@ export default function Home() {
     "rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-xs hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-brand";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header className="max-w-3xl">
         <p className="text-xs font-bold uppercase tracking-widest text-red-700">The monitoring gap</p>
         <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-ink sm:text-4xl">
@@ -65,7 +65,7 @@ export default function Home() {
         </div>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-2">
         <Card>
           <div className="mb-2 flex items-center justify-between gap-2">
             <h2 className="text-sm font-bold text-ink">What the classes mean</h2>

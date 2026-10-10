@@ -367,7 +367,7 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
       </MapContainer>
 
       {/* Map tools */}
-      <div className="absolute left-14 top-3 z-[400] flex items-center gap-2">
+      <div className="absolute left-14 right-3 top-3 z-[400] flex flex-wrap items-center justify-end gap-2 sm:justify-start">
         <button
           type="button"
           onClick={fitKarnataka}

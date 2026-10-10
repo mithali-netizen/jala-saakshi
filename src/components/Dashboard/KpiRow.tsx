@@ -70,7 +70,7 @@ export const KpiRow: React.FC<KpiRowProps> = ({ stats, focus, onFocus, listed, s
   ];
 
   return (
-    <section aria-label="Key figures" className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <section aria-label="Key figures" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
       {tiles.map((t) => {
         const active = focus === t.key;
         return (
@@ -79,7 +79,7 @@ export const KpiRow: React.FC<KpiRowProps> = ({ stats, focus, onFocus, listed, s
             type="button"
             aria-pressed={active}
             onClick={() => onFocus(t.key)}
-            className={`group rounded-xl border bg-white p-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-teal-700 ${
+            className={`group rounded-xl border bg-white p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-teal-700 ${
               active
                 ? 'border-teal-700 ring-1 ring-teal-700'
                 : t.alert

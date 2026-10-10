@@ -135,7 +135,7 @@ function RuleSection() {
 
 export default function Lake() {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <header className="max-w-3xl">
         <p className="text-xs font-bold uppercase tracking-widest text-red-700">Featured case</p>
         <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight sm:text-3xl">{DODDAGUBBI.name}, Bengaluru</h1>
