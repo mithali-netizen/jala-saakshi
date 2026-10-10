@@ -1,509 +1,310 @@
-import React, { useState } from 'react';
-import type { WaterReading, StationLocation } from '../../types/waterData';
-import { getClassConfig } from '../../utils/waterQuality';
-import { TrendChart } from './TrendChart';
-import { formatMonthName } from '../Timeline/MonthSelector';
-import { COMPLAINT_EMAIL, COMPLAINT_PHONES, RESPONSIBLE_AUTHORITY } from '../../config';
+import React, { useMemo, useState } from 'react';
 import {
-  classMeaning,
-  bodMeaning,
-  doMeaning,
-  coliformMeaning,
-  headline,
-  OFFICIAL_EXPLANATIONS,
-} from '../../plainLanguage';
-import {
-  X,
-  MapPin,
-  ArrowDownCircle,
+  Bell,
+  BellRing,
   ChevronDown,
-  Info,
-  AlertTriangle,
   HelpCircle,
-  Wind,
-  Trash2,
-  Bug,
   Mail,
+  MapPin,
+  Megaphone,
+  Minus,
   Phone,
-  ShieldAlert,
-  Check,
-  Copy,
+  TrendingDown,
+  TrendingUp,
+  X,
 } from 'lucide-react';
+import type { MonitoringLocation, TrendDirection } from '../../utils/stations';
+import { computeTrend } from '../../utils/stations';
+import {
+  barPosition,
+  classVerdict,
+  getClassConfig,
+  PARAM_LIMITS,
+  type ParamKey,
+} from '../../utils/waterQuality';
+import { formatMonth } from '../../utils/months';
+import { COMPLAINT_EMAIL, COMPLAINT_PHONES, RESPONSIBLE_AUTHORITY } from '../../config';
+import { classMeaning, coliformMeaning, bodMeaning, doMeaning, headline, OFFICIAL_EXPLANATIONS } from '../../plainLanguage';
+import { Hint } from '../ui/Hint';
+import { TrendChart } from './TrendChart';
 
 interface StationPanelProps {
-  station: StationLocation;
-  allStations: StationLocation[];
-  readings: WaterReading[];
-  months: string[];
+  location: MonitoringLocation;
   selectedMonth: string;
   onClose: () => void;
 }
 
-export const StationPanel: React.FC<StationPanelProps> = ({
-  station,
-  allStations,
-  readings,
-  months,
-  selectedMonth,
-  onClose,
+const TREND_UI: Record<TrendDirection, { label: string; cls: string; Icon: typeof Minus }> = {
+  improving: { label: 'Improving', cls: 'bg-emerald-50 text-emerald-800 border-emerald-200', Icon: TrendingUp },
+  worsening: { label: 'Worsening', cls: 'bg-rose-50 text-rose-800 border-rose-200', Icon: TrendingDown },
+  stable: { label: 'Stable', cls: 'bg-slate-100 text-slate-700 border-slate-200', Icon: Minus },
+  unknown: { label: 'Not enough readings', cls: 'bg-slate-100 text-slate-500 border-slate-200', Icon: Minus },
+};
+
+const ALERT_KEY = 'jala-alerts';
+
+function readAlerts(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(ALERT_KEY) ?? '[]');
+  } catch {
+    return [];
+  }
+}
+
+const ParamBar: React.FC<{ param: ParamKey; value: number | null | undefined; explanation: string }> = ({
+  param,
+  value,
+  explanation,
 }) => {
-  const [copyStatus, setCopyStatus] = useState<string | null>(null);
+  const limit = PARAM_LIMITS[param];
+  const has = value != null;
+  const best = has ? limit.bestClass(value) : null;
+  const visual = getClassConfig(best);
+  const verdict = !has ? 'Not recorded' : best ? `Meets Class ${best} limit` : limit.failText;
 
-  // All historical readings for this station
-  const stationReadings = readings.filter((r) => r.station_code === station.station_code);
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-2 text-sm">
+        <Hint text={limit.explain}>
+          <span className="font-medium text-slate-800">{limit.label}</span>
+        </Hint>
+        <span className="font-semibold tabular-nums text-slate-900">
+          {has ? `${value.toLocaleString()} ` : '—'}
+          <span className="text-xs font-normal text-slate-500">{limit.unit}</span>
+        </span>
+      </div>
+      <div className="relative mt-1.5 h-2 rounded-full bg-slate-200">
+        {has && (
+          <div
+            className="absolute inset-y-0 left-0 rounded-full"
+            style={{ width: `${Math.max(2, barPosition(limit, value) * 100)}%`, background: best ? visual.bgHex : '#be123c' }}
+          />
+        )}
+        {limit.ticks.map((t) => (
+          <span
+            key={t.value}
+            className="absolute -top-1 h-4 w-px bg-slate-700/60"
+            style={{ left: `${barPosition(limit, t.value) * 100}%` }}
+            aria-hidden
+          />
+        ))}
+      </div>
+      <div className="relative mt-0.5 h-4 text-[10px] text-slate-500" aria-hidden>
+        {limit.ticks.map((t) => (
+          <span key={t.value} className="absolute -translate-x-1/2" style={{ left: `${barPosition(limit, t.value) * 100}%` }}>
+            {t.label}
+          </span>
+        ))}
+      </div>
+      <p className="text-xs text-slate-600">
+        <span className="font-semibold text-slate-700">{verdict}.</span> {explanation}
+      </p>
+    </div>
+  );
+};
 
-  // Reading for the currently selected month
-  const currentReading = stationReadings.find((r) => r.month === selectedMonth);
+export const StationPanel: React.FC<StationPanelProps> = ({ location, selectedMonth, onClose }) => {
+  const reading = location.byMonth.get(selectedMonth);
+  const sampled = !!reading && reading.status !== 'no_access';
+  const visual = getClassConfig(sampled ? reading.class : null);
+  const trend = useMemo(() => computeTrend(location, selectedMonth), [location, selectedMonth]);
+  const T = TREND_UI[trend];
 
-  // Find upstream station (station with immediate preceding river_order)
-  const upstreamStation = React.useMemo(() => {
-    if (!station.river_order || station.river_order <= 1) return null;
-    return allStations.find((s) => s.river_order === (station.river_order! - 1)) || null;
-  }, [station, allStations]);
+  const lastMonth = useMemo(
+    () => [...location.months].reverse().find((m) => m <= selectedMonth && location.byMonth.get(m)?.status !== 'no_access'),
+    [location, selectedMonth],
+  );
 
-  // Upstream reading in current month
-  const upstreamReading = React.useMemo(() => {
-    if (!upstreamStation) return null;
-    return readings.find(
-      (r) => r.station_code === upstreamStation.station_code && r.month === selectedMonth
-    );
-  }, [upstreamStation, readings, selectedMonth]);
-
-  const classVisual = getClassConfig(currentReading?.class);
-
-  // Plain-language interpretations from src/plainLanguage.ts
-  const stationHeadline = headline(currentReading, upstreamReading);
-  const classExplanation = classMeaning(currentReading?.class);
-  const bodExplanation = bodMeaning(currentReading?.bod, upstreamReading?.bod);
-  const doExplanation = doMeaning(currentReading?.do);
-  const coliformExplanation = coliformMeaning(currentReading?.total_coliform);
-
-  // Generate pre-filled complaint email body
-  const generateComplaintBody = () => [
-    `CITIZEN WATER QUALITY / POLLUTION REPORT`,
-    `=========================================`,
-    `Station: ${station.station_name} (${station.station_code})`,
-    `River: ${station.river}`,
-    `River Flow Order: #${station.river_order ?? 'N/A'}`,
-    `Monitoring Month: ${selectedMonth}`,
-    `Water Quality Class: Class ${currentReading?.class || 'Unclassified'}`,
-    `-----------------------------------------`,
-    `Measurements:`,
-    `  Dissolved Oxygen (DO): ${currentReading?.do != null ? `${currentReading.do} mg/L` : 'Not recorded'}`,
-    `  Biochemical Oxygen Demand (BOD): ${currentReading?.bod != null ? `${currentReading.bod} mg/L` : 'Not recorded'}`,
-    `  Total Coliform: ${currentReading?.total_coliform != null ? `${currentReading.total_coliform.toLocaleString()} MPN/100ml` : 'Not recorded'}`,
-    `  Fecal Coliform: ${currentReading?.fecal_coliform != null ? `${currentReading.fecal_coliform.toLocaleString()} MPN/100ml` : 'Not recorded'}`,
-    `-----------------------------------------`,
-    `Location: ${station.lat.toFixed(5)} N, ${station.lng.toFixed(5)} E`,
-    `Summary: ${stationHeadline}`,
-    ``,
-    `Responsible Authority: ${RESPONSIBLE_AUTHORITY.name}`,
-    `Division: ${RESPONSIBLE_AUTHORITY.division}`,
-  ].join('\n');
-
-  const handleReportPollution = async () => {
-    const body = generateComplaintBody();
-    const subject = encodeURIComponent(
-      `Pollution Report: ${station.station_name} — ${station.river} River (${selectedMonth})`
-    );
-    const encodedBody = encodeURIComponent(body);
-
-    // Attempt to copy the plain text to clipboard as a backup
+  const [alertsOn, setAlertsOn] = useState(() => readAlerts().includes(location.id));
+  const toggleAlerts = () => {
+    const next = !alertsOn;
+    setAlertsOn(next);
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(body);
-      }
-    } catch (_) {
-      // clipboard optional; the mailto: still opens
+      const set = new Set(readAlerts());
+      if (next) set.add(location.id);
+      else set.delete(location.id);
+      localStorage.setItem(ALERT_KEY, JSON.stringify([...set]));
+    } catch {
+      /* storage unavailable: keep the in-memory toggle */
     }
+  };
 
-    // Open pre-filled mailto: link (opens user's default email client)
-    window.location.href = `mailto:${COMPLAINT_EMAIL}?subject=${subject}&body=${encodedBody}`;
-
-    setCopyStatus('copied');
-    setTimeout(() => setCopyStatus(null), 5000);
+  const reportByEmail = () => {
+    const f = (v: number | null | undefined, unit: string) => (v != null ? `${v.toLocaleString()} ${unit}` : 'Not recorded');
+    const body = [
+      'CITIZEN WATER QUALITY / POLLUTION REPORT',
+      `Location: ${location.name}`,
+      `River: ${location.river}`,
+      `Month of monitoring data: ${formatMonth(selectedMonth)}`,
+      `CPCB class: ${reading?.class ? `Class ${reading.class}` : 'Unclassified'}`,
+      `DO: ${f(reading?.do, 'mg/L')}`,
+      `BOD: ${f(reading?.bod, 'mg/L')}`,
+      `Total coliform: ${f(reading?.total_coliform, 'MPN/100ml')}`,
+      `Coordinates: ${location.lat.toFixed(5)} N, ${location.lng.toFixed(5)} E`,
+      '',
+      `To: ${RESPONSIBLE_AUTHORITY.name}, ${RESPONSIBLE_AUTHORITY.division}`,
+    ].join('\n');
+    window.open(`mailto:${COMPLAINT_EMAIL}?subject=${encodeURIComponent(
+      `Pollution report: ${location.name} (${formatMonth(selectedMonth)})`,
+    )}&body=${encodeURIComponent(body)}`, '_self');
   };
 
   return (
-    <div
+    <aside
       role="dialog"
       aria-labelledby="station-panel-title"
-      className="bg-white rounded-2xl border border-slate-200 shadow-xl flex flex-col h-full overflow-hidden max-h-[85vh] lg:max-h-none"
+      className="flex max-h-full flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl"
     >
-      {/* Top Header */}
-      <div className="p-4 sm:p-5 border-b border-slate-200 bg-slate-50/70 flex items-start justify-between gap-3 shrink-0">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-slate-500 bg-slate-200/80 px-2 py-0.5 rounded">
-              {station.station_code}
-            </span>
-            <span className="text-xs text-slate-600 flex items-center gap-1 font-medium">
-              <MapPin className="w-3.5 h-3.5 text-blue-600" />
-              {station.river} River
-            </span>
+      <header className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+            <MapPin className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{location.river}</span>
           </div>
-          <h2
-            id="station-panel-title"
-            className="text-base sm:text-lg font-bold text-slate-900 leading-snug"
-          >
-            {station.station_name}
+          <h2 id="station-panel-title" className="mt-0.5 text-base font-bold leading-snug text-slate-900">
+            {location.name}
           </h2>
-          <div className="text-xs text-slate-500 mt-1 flex items-center gap-2 flex-wrap">
-            <span>
-              Flow Position: <strong>#{station.river_order ?? 'N/A'}</strong> of {allStations.length}
-            </span>
-            <span>•</span>
-            <span>Month: <strong>{formatMonthName(selectedMonth)}</strong></span>
-            {currentReading?.district && (
-              <>
-                <span>•</span>
-                <span>District: <strong>{currentReading.district}</strong></span>
-              </>
-            )}
-          </div>
-          {currentReading?.stretch && (
-            <div className="text-[11px] text-slate-400 mt-0.5 italic truncate">
-              Stretch: {currentReading.stretch}
-            </div>
-          )}
         </div>
-
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close station details"
-          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 transition-colors shrink-0"
+          aria-label="Close panel"
+          className="shrink-0 rounded-lg p-1.5 text-slate-500 hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-indigo-600"
         >
-          <X className="w-5 h-5" />
+          <X className="h-5 w-5" />
         </button>
-      </div>
+      </header>
 
-      {/* Scrollable Content Body */}
-      <div className="p-4 sm:p-5 overflow-y-auto space-y-4 flex-1">
-        {/* 1. Plain-Language Headline Box */}
-        <div
-          className="p-3.5 rounded-xl border flex items-start gap-3 shadow-2xs"
-          style={{
-            backgroundColor: `${classVisual.bgHex}15`,
-            borderColor: `${classVisual.bgHex}40`,
-          }}
-        >
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 shadow-sm"
-            style={{
-              backgroundColor: classVisual.bgHex,
-              color: classVisual.textHex,
-            }}
+      <div className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
+        {/* Class + plain meaning */}
+        <section className="flex items-start gap-3">
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white"
+            style={{ background: visual.bgHex }}
+            aria-hidden
           >
-            {classVisual.letter}
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                {classVisual.label}
+            {visual.letter}
+          </span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-bold text-slate-900">
+                {sampled && reading.class ? `Class ${reading.class}` : 'No class'} · {formatMonth(selectedMonth)}
+              </span>
+              <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${T.cls}`}>
+                <T.Icon className="h-3 w-3" /> {T.label}
               </span>
             </div>
-            <p className="text-sm font-bold text-slate-900 mt-0.5 leading-snug">
-              {stationHeadline}
-            </p>
-            <p className="text-xs text-slate-700 mt-1 leading-normal">
-              {classExplanation}
+            <p className="mt-0.5 text-sm font-semibold text-slate-800">{classVerdict(sampled ? reading.class : null)}</p>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+              {sampled ? classMeaning(reading.class) : headline(reading)}
             </p>
           </div>
-        </div>
+        </section>
 
-        {/* 2. Plain-Language Key Signals Cards */}
-        {currentReading && currentReading.status !== 'no_access' && (
-          <div className="grid grid-cols-1 gap-2.5">
-            {/* Waste (BOD) */}
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs">
-              <div className="flex items-center justify-between text-slate-700 mb-1 font-semibold">
-                <span className="flex items-center gap-1.5 text-red-700">
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Organic Waste (BOD)</span>
-                </span>
-                <span className="font-mono text-slate-900 font-bold">
-                  {currentReading.bod !== null ? `${currentReading.bod} mg/L` : '—'}
-                </span>
-              </div>
-              <p className="text-slate-600 leading-relaxed">{bodExplanation}</p>
-            </div>
-
-            {/* Oxygen (DO) */}
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs">
-              <div className="flex items-center justify-between text-slate-700 mb-1 font-semibold">
-                <span className="flex items-center gap-1.5 text-sky-700">
-                  <Wind className="w-3.5 h-3.5" />
-                  <span>River Oxygen (DO)</span>
-                </span>
-                <span className="font-mono text-slate-900 font-bold">
-                  {currentReading.do !== null ? `${currentReading.do} mg/L` : '—'}
-                </span>
-              </div>
-              <p className="text-slate-600 leading-relaxed">{doExplanation}</p>
-            </div>
-
-            {/* Germs (Coliform) */}
-            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs">
-              <div className="flex items-center justify-between text-slate-700 mb-1 font-semibold">
-                <span className="flex items-center gap-1.5 text-amber-700">
-                  <Bug className="w-3.5 h-3.5" />
-                  <span>Bacteria & Germs</span>
-                </span>
-                <span className="font-mono text-slate-900 font-bold">
-                  {currentReading.total_coliform !== null
-                    ? `${currentReading.total_coliform.toLocaleString()} MPN`
-                    : '—'}
-                </span>
-              </div>
-              <p className="text-slate-600 leading-relaxed">{coliformExplanation}</p>
-            </div>
-          </div>
+        {!sampled && lastMonth && (
+          <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            Not sampled in {formatMonth(selectedMonth)}. Last reading was {formatMonth(lastMonth)}.
+          </p>
+        )}
+        {location.names.length > 1 && (
+          <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+            KSPCB lists {location.names.length} stations at this point; the worst reading each month is shown.
+          </p>
         )}
 
-        {/* 3. Upstream Comparison Banner */}
-        {upstreamStation && (
-          <div className="bg-sky-50/70 border border-sky-200/80 rounded-xl p-3 text-xs text-slate-700 flex items-start gap-2.5">
-            <ArrowDownCircle className="w-4 h-4 text-sky-600 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <span className="font-semibold text-slate-800 block">
-                Upstream River Comparison ({upstreamStation.station_name})
-              </span>
-              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <span>
-                  Waste (BOD):{' '}
-                  <strong>
-                    {upstreamReading?.bod !== null && upstreamReading?.bod !== undefined
-                      ? `${upstreamReading.bod} upstream`
-                      : '— upstream'}
-                  </strong>
-                  ,{' '}
-                  <strong className="text-blue-900 font-bold">
-                    {currentReading?.bod !== null && currentReading?.bod !== undefined
-                      ? `${currentReading.bod} here`
-                      : '— here'}
-                  </strong>
-                </span>
-                {upstreamReading?.bod &&
-                  currentReading?.bod &&
-                  currentReading.bod >= upstreamReading.bod * 1.5 && (
-                    <span className="bg-red-100 text-red-800 border border-red-200 px-1.5 py-0.5 rounded font-semibold text-[11px]">
-                      {Math.round(currentReading.bod / upstreamReading.bod)}x more waste here
-                    </span>
-                  )}
-              </div>
-            </div>
-          </div>
+        {/* Parameters against CPCB limits */}
+        {sampled && (
+          <section aria-label="Key readings" className="space-y-4">
+            <ParamBar param="do" value={reading.do} explanation={doMeaning(reading.do)} />
+            <ParamBar param="bod" value={reading.bod} explanation={bodMeaning(reading.bod)} />
+            <ParamBar param="coliform" value={reading.total_coliform} explanation={coliformMeaning(reading.total_coliform)} />
+            <p className="text-[11px] text-slate-500">
+              Tick marks show CPCB class limits. pH was not reported in this data.
+            </p>
+          </section>
         )}
 
-        {/* 4. Action Layer: Report Pollution & Responsible Authority */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200/90 rounded-xl p-4 flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <ShieldAlert className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900">
-                  Citizen Action & Grievance
-                </h4>
-                <p className="text-xs text-amber-800">
-                  Submit observations or report non-compliance directly to authorities.
-                </p>
-              </div>
-            </div>
-          </div>
+        {/* Trend */}
+        <section aria-label="Trend over time">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+            All readings, {formatMonth(location.months[0])} to {formatMonth(location.months[location.months.length - 1])}
+          </h3>
+          <TrendChart location={location} selectedMonth={selectedMonth} />
+        </section>
 
-          {/* Responsible Authority Contact Card */}
-          <div className="bg-white/80 border border-amber-200/60 rounded-lg p-3 text-xs text-slate-700 space-y-2">
-            <div>
-              <span className="text-[11px] text-slate-500 uppercase font-semibold block tracking-wide mb-0.5">
-                Responsible Authority
-              </span>
-              <div className="font-bold text-slate-900">{RESPONSIBLE_AUTHORITY.name}</div>
-              <div className="text-slate-500 text-[11px]">{RESPONSIBLE_AUTHORITY.division}</div>
-            </div>
-
-            {/* Phone numbers */}
-            <div>
-              <span className="text-[11px] text-slate-500 uppercase font-semibold block tracking-wide mb-1">
-                Landline Numbers
-              </span>
-              <div className="grid grid-cols-2 gap-1">
-                {COMPLAINT_PHONES.map((phone) => (
-                  <a
-                    key={phone}
-                    href={`tel:${phone.replace(/-/g, '')}`}
-                    className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-900 px-2 py-1.5 rounded-lg hover:bg-amber-100 transition-colors font-mono text-[11px] font-semibold"
-                  >
-                    <Phone className="w-3 h-3 shrink-0 text-amber-700" />
-                    {phone}
-                  </a>
-                ))}
-              </div>
-            </div>
-
-            {/* Email */}
-            <div>
-              <span className="text-[11px] text-slate-500 uppercase font-semibold block tracking-wide mb-1">
-                Email
-              </span>
-              <a
-                href={`mailto:${COMPLAINT_EMAIL}`}
-                className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 text-amber-900 px-2 py-1.5 rounded-lg hover:bg-amber-100 transition-colors text-[11px] font-semibold w-full"
-              >
-                <Mail className="w-3 h-3 shrink-0 text-amber-700" />
-                {COMPLAINT_EMAIL}
-              </a>
-            </div>
-          </div>
-
-          {/* Action Button — opens mailto: with prefilled details */}
+        {/* Actions */}
+        <section className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={handleReportPollution}
-            className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-semibold rounded-xl text-xs sm:text-sm shadow-sm transition-all transform active:scale-[0.99]"
+            onClick={reportByEmail}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-semibold text-white hover:bg-indigo-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
           >
-            {copyStatus === 'copied' ? (
-              <>
-                <Check className="w-4 h-4 text-emerald-200" />
-                <span>Email drafted — sending via your mail app</span>
-              </>
-            ) : (
-              <>
-                <Mail className="w-4 h-4" />
-                <span>Report this pollution</span>
-                <Copy className="w-3.5 h-3.5 opacity-70" />
-              </>
-            )}
+            <Megaphone className="h-4 w-4" /> Report a problem
           </button>
-
-          {copyStatus === 'copied' && (
-            <div className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 p-2 rounded-lg flex items-center gap-2">
-              <Check className="w-3.5 h-3.5 shrink-0 text-emerald-600" />
-              <span>
-                Pre-filled email opened in your mail app addressed to {COMPLAINT_EMAIL}.
-                The complaint details are also copied to your clipboard.
-              </span>
-            </div>
+          <button
+            type="button"
+            onClick={toggleAlerts}
+            aria-pressed={alertsOn}
+            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
+              alertsOn ? 'border-indigo-600 bg-indigo-50 text-indigo-800' : 'border-slate-300 bg-white text-slate-800 hover:bg-slate-50'
+            }`}
+          >
+            {alertsOn ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+            {alertsOn ? 'Alerts on' : 'Get alerts'}
+          </button>
+          {alertsOn && (
+            <p className="col-span-2 text-[11px] text-slate-500">
+              Saved on this device. Alert delivery starts when the 48-hour risk engine goes live.
+            </p>
           )}
+        </section>
 
-          <p className="text-[11px] text-amber-800/80 italic">
-            * Opens your mail app with station name, river, month, water class, and readings pre-filled.
-            You can also call the KSPCB ICCC directly on any of the landline numbers above.
-          </p>
-        </div>
-
-        {/* 5. 8-Month Trend Chart */}
-        <TrendChart
-          months={months}
-          stationReadings={stationReadings}
-          selectedMonth={selectedMonth}
-        />
-
-        {/* 6. "What do these terms mean?" Expander */}
-        <details className="group bg-slate-50 border border-slate-200 rounded-xl overflow-hidden transition-all">
-          <summary className="p-3 text-xs font-semibold text-slate-700 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors list-none">
+        <details className="group rounded-xl border border-slate-200">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-xs font-semibold text-slate-700">
             <span className="flex items-center gap-2">
-              <HelpCircle className="w-4 h-4 text-blue-600" />
-              <span>What do these terms mean?</span>
+              <HelpCircle className="h-4 w-4 text-slate-500" /> What do the classes and terms mean?
             </span>
-            <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" />
+            <ChevronDown className="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180" />
           </summary>
-
-          <div className="p-3.5 pt-1 border-t border-slate-200/60 text-xs space-y-3 mt-1 text-slate-600">
-            <div>
-              <h4 className="font-bold text-slate-800 mb-1">Official CPCB Water Quality Classes</h4>
-              <p className="text-[11px] text-slate-500 mb-2">
-                CPCB classifies inland surface waters according to Designated-Best-Use:
+          <div className="space-y-2 border-t border-slate-200 px-3 py-3 text-xs text-slate-600">
+            {OFFICIAL_EXPLANATIONS.classes.map((c) => (
+              <p key={c.code}>
+                <strong className="text-slate-800">Class {c.code}</strong> · {c.title}.{' '}
+                <span className="text-slate-500">{c.description}</span>
               </p>
-              <ul className="space-y-1.5">
-                {OFFICIAL_EXPLANATIONS.classes.map((c) => (
-                  <li key={c.code} className="bg-white p-2 rounded border border-slate-200">
-                    <strong className="text-slate-800 font-mono">Class {c.code}:</strong>{' '}
-                    <span className="font-semibold text-slate-700">{c.title}</span>
-                    <div className="text-[11px] text-slate-500 mt-0.5">{c.description}</div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="font-bold text-slate-800 mb-1">Measurements & Scientific Units</h4>
-              <ul className="space-y-1.5">
-                {OFFICIAL_EXPLANATIONS.metrics.map((m) => (
-                  <li key={m.name} className="bg-white p-2 rounded border border-slate-200">
-                    <div className="font-semibold text-slate-800">{m.name}</div>
-                    <div className="text-[11px] text-blue-700 font-mono">Unit: {m.unit}</div>
-                    <div className="text-[11px] text-slate-500 mt-0.5">{m.meaning}</div>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            ))}
           </div>
         </details>
 
-        {/* 7. Collapsed Raw Measurements */}
-        <details className="group bg-slate-50 border border-slate-200 rounded-xl overflow-hidden transition-all">
-          <summary className="p-3 text-xs font-semibold text-slate-700 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors list-none">
+        <details className="group rounded-xl border border-slate-200">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-xs font-semibold text-slate-700">
             <span className="flex items-center gap-2">
-              <Info className="w-4 h-4 text-slate-500" />
-              <span>See the measurements</span>
+              <Mail className="h-4 w-4 text-slate-500" /> Contact KSPCB directly
             </span>
-            <ChevronDown className="w-4 h-4 text-slate-400 group-open:rotate-180 transition-transform" />
+            <ChevronDown className="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180" />
           </summary>
-
-          <div className="p-3.5 pt-0 border-t border-slate-200/60 text-xs space-y-2 mt-2">
-            {currentReading?.status === 'no_access' ? (
-              <div className="bg-amber-50 text-amber-900 border border-amber-200 rounded-lg p-2.5 flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                <div>
-                  <strong>Site Access Restricted:</strong> {currentReading.note || 'Unable to collect sample.'}
-                </div>
-              </div>
-            ) : currentReading ? (
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-white p-2 rounded-lg border border-slate-200">
-                  <span className="text-slate-500 text-[11px] block">Dissolved Oxygen (DO)</span>
-                  <span className="text-sm font-bold text-slate-800">
-                    {currentReading.do !== null ? `${currentReading.do} mg/L` : 'Missing'}
-                  </span>
-                </div>
-                <div className="bg-white p-2 rounded-lg border border-slate-200">
-                  <span className="text-slate-500 text-[11px] block">Biochemical Oxygen Demand (BOD)</span>
-                  <span className="text-sm font-bold text-slate-800">
-                    {currentReading.bod !== null ? `${currentReading.bod} mg/L` : 'Missing'}
-                  </span>
-                </div>
-                <div className="bg-white p-2 rounded-lg border border-slate-200">
-                  <span className="text-slate-500 text-[11px] block">Total Coliform</span>
-                  <span className="text-sm font-bold text-slate-800">
-                    {currentReading.total_coliform !== null
-                      ? `${currentReading.total_coliform.toLocaleString()} MPN/100ml`
-                      : 'Missing'}
-                  </span>
-                </div>
-                <div className="bg-white p-2 rounded-lg border border-slate-200">
-                  <span className="text-slate-500 text-[11px] block">Fecal Coliform</span>
-                  <span className="text-sm font-bold text-slate-800">
-                    {currentReading.fecal_coliform !== null
-                      ? `${currentReading.fecal_coliform.toLocaleString()} MPN/100ml`
-                      : 'Missing'}
-                  </span>
-                </div>
-                <div className="bg-white p-2 rounded-lg border border-slate-200 col-span-2">
-                  <span className="text-slate-500 text-[11px] block">Coordinates</span>
-                  <span className="font-mono text-xs text-slate-700">
-                    {station.lat.toFixed(4)}° N, {station.lng.toFixed(4)}° E
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <p className="text-slate-500 italic">No measurement recorded for {selectedMonth}.</p>
-            )}
+          <div className="space-y-2 border-t border-slate-200 px-3 py-3 text-xs text-slate-600">
+            <p className="font-semibold text-slate-800">
+              {RESPONSIBLE_AUTHORITY.name}
+              <span className="block font-normal text-slate-500">{RESPONSIBLE_AUTHORITY.division}</span>
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {COMPLAINT_PHONES.map((p) => (
+                <a
+                  key={p}
+                  href={`tel:${p.replace(/-/g, '')}`}
+                  className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1 font-mono text-[11px] text-slate-800 hover:bg-slate-200"
+                >
+                  <Phone className="h-3 w-3" /> {p}
+                </a>
+              ))}
+            </div>
+            <a href={`mailto:${COMPLAINT_EMAIL}`} className="text-indigo-700 underline">
+              {COMPLAINT_EMAIL}
+            </a>
           </div>
         </details>
       </div>
-    </div>
+    </aside>
   );
 };
