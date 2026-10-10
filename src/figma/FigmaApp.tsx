@@ -8,6 +8,7 @@ import { complaintMailto } from "../services/complaint";
 import { daysSince, formatDay, todayISO } from "../utils/dates";
 import type { Lake } from "../services/lakes";
 import { MiniMap } from "../components/Map/MiniMap";
+import { DEMO_LAKE_NAMES, SEEDED_CASES, seededAcknowledged, seededHighRisk } from "../demo/seededCases";
 
 /** A report being filled in. Lives above the screens so Review can see what Report collected. */
 export interface Draft {
@@ -155,7 +156,7 @@ function HomeScreen({ navigate }: { navigate: (screen: Screen) => void }) {
   return <MobileFrame active="home" navigate={navigate}>
     <div className="home-top">
       <MobileHeader action={<button className="avatar" onClick={() => navigate("authority")} aria-label="Open authority dashboard">AK</button>} />
-      <div className="greeting"><p>Good morning, Ananya</p><h1>How are our lakes today?</h1></div>
+      <div className="greeting"><p>{new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening"}</p><h1>How are our lakes today?</h1></div>
     </div>
     <div className="screen-body overlap">
       <Card className="health-card">
@@ -166,14 +167,14 @@ function HomeScreen({ navigate }: { navigate: (screen: Screen) => void }) {
       </Card>
       <SectionTitle action={<button className="text-button" onClick={() => navigate("map")}>View map <Icon name="arrow" className="size-4" /></button>}>Lake needing attention</SectionTitle>
       <Card className="featured-card" onClick={() => navigate("lake")}>
-        <div className="lake-photo"><img src={LAKE_IMAGE} alt="Stock photograph of a lake, used as a placeholder" /><div className="photo-overlay"><Badge tone="high">High risk</Badge><DemoTag /></div></div>
-        <div className="featured-content"><div><h2>Bellandur Lake</h2><p>Possible froth and sewage inflow reported</p></div><Icon name="arrow" /></div>
-        <div className="source-line"><Icon name="clock" className="size-4" /> Updated 18 min ago · Citizen reports</div>
+        <div className="lake-photo"><img src={LAKE_IMAGE} alt="Stock photograph of a lake, used as a placeholder" /><div className="photo-overlay"><DemoTag /></div></div>
+        <div className="featured-content"><div><h2>{DEMO_LAKE_NAMES.east}</h2><p>Example of how a flagged lake would appear</p></div><Icon name="arrow" /></div>
+        <div className="source-line"><Icon name="shield" className="size-4" /> Seeded example · not a real observation</div>
       </Card>
       <SectionTitle>Nearby alerts</SectionTitle>
       <div className="alert-list">
-        <Card className="alert-row" onClick={() => navigate("lake")}><span className="alert-icon elevated"><Icon name="water" /></span><div><h3>Varthur Lake</h3><p>Elevated algae observation</p></div><span className="time">1h</span></Card>
-        <Card className="alert-row"><span className="alert-icon low"><Icon name="rain" /></span><div><h3>Agara Lake</h3><p>Rainfall context updated</p></div><span className="time">3h</span></Card>
+        <Card className="alert-row" onClick={() => navigate("lake")}><span className="alert-icon elevated"><Icon name="water" /></span><div><h3>{DEMO_LAKE_NAMES.north}</h3><p>Example alert</p></div><span className="time">Demo</span></Card>
+        <Card className="alert-row"><span className="alert-icon low"><Icon name="rain" /></span><div><h3>{DEMO_LAKE_NAMES.south}</h3><p>Example alert</p></div><span className="time">Demo</span></Card>
       </div>
       <Button className="full sticky-cta" icon="camera" onClick={() => navigate("report")}>Report pollution</Button>
     </div>
@@ -221,9 +222,9 @@ function TrendChart() {
 function LakeDetailsScreen({ navigate }: { navigate: (screen: Screen) => void }) {
   return <MobileFrame navigate={navigate}>
     <MobileHeader title="Lake details" onBack={() => navigate("home")} action={<Badge tone="neutral">DEMO</Badge>} />
-    <div className="details-hero"><img src={LAKE_IMAGE} alt="Bellandur Lake demo imagery" /></div>
+    <div className="details-hero"><img src={LAKE_IMAGE} alt="Stock photograph of a lake, used as a placeholder" /></div>
     <div className="screen-body details-body">
-      <div className="hero-copy"><Badge tone="high">High risk</Badge><h1>Bellandur Lake</h1><p><Icon name="location" className="size-4" /> Bengaluru East</p></div>
+      <div className="hero-copy"><DemoTag /><h1>{DEMO_LAKE_NAMES.east}</h1><p><Icon name="location" className="size-4" /> Example lake page</p></div>
       <Card className="risk-summary"><div className="risk-gauge"><span>78</span><small>/100</small></div><div><div className="eyebrow">Current risk summary</div><h2>Needs attention</h2><p>Based on available demo signals, not an official assessment.</p></div></Card>
       <SectionTitle>Evidence overview</SectionTitle>
       <div className="source-list">
@@ -234,7 +235,7 @@ function LakeDetailsScreen({ navigate }: { navigate: (screen: Screen) => void })
       </div>
       <SectionTitle>Historical context</SectionTitle><TrendChart />
       <SectionTitle>Recent incidents</SectionTitle>
-      <Card className="incident-row"><span className="incident-date">18<span>JUN</span></span><div><h3>Froth near eastern inlet</h3><p>Citizen-submitted · Awaiting review</p></div><Badge tone="elevated">Open</Badge></Card>
+      <Card className="incident-row"><span className="incident-date demo">Demo</span><div><h3>Froth near eastern inlet</h3><p>Citizen-submitted · Awaiting review</p></div><Badge tone="elevated">Open</Badge></Card>
       <Button className="full" icon="camera" onClick={() => navigate("report")}>Report an observation</Button>
       <p className="photo-credit">Lake photo by Harsh Khandelwal on Unsplash</p>
     </div>
@@ -389,8 +390,8 @@ function ReviewScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen
 }
 
 const timeline = [
-  { title: "Submitted", detail: "Report and photo received", time: "Today, 10:44 AM", done: true },
-  { title: "Acknowledged", detail: "Demo intake acknowledged", time: "Today, 11:02 AM", done: true },
+  { title: "Submitted", detail: "Report and photo received", time: "Seeded example", done: true },
+  { title: "Acknowledged", detail: "Seeded intake acknowledgement", time: "Seeded example", done: true },
   { title: "Inspection recorded", detail: "Awaiting field review", time: "Pending", done: false },
   { title: "Resolution verified", detail: "Requires independent verification", time: "Pending", done: false },
 ];
@@ -451,19 +452,12 @@ function TrackingScreen({ navigate }: { navigate: (screen: Screen) => void }) {
 function AuthorityShell({ children, active = "dashboard", navigate }: { children: ReactNode; active?: "dashboard" | "incidents"; navigate: (screen: Screen) => void }) {
   return <div className="authority-shell">
     <aside className="side-nav"><Logo /><div className="portal-label">Authority portal <DemoTag /></div>
-      <nav><button className={active === "dashboard" ? "active" : ""} onClick={() => navigate("authority")}><Icon name="home" />Overview</button><button className={active === "incidents" ? "active" : ""} onClick={() => navigate("incident")}><Icon name="file" />Incidents <span>18</span></button><button><Icon name="map" />Lake network</button><button><Icon name="users" />Teams</button></nav>
+      <nav><button className={active === "dashboard" ? "active" : ""} onClick={() => navigate("authority")}><Icon name="home" />Overview</button><button className={active === "incidents" ? "active" : ""} onClick={() => navigate("incident")}><Icon name="file" />Incidents <span>{SEEDED_CASES.length}</span></button><button><Icon name="map" />Lake network</button><button><Icon name="users" />Teams</button></nav>
       <div className="side-footer"><button onClick={() => navigate("home")}><Icon name="chevron" />Citizen app</button><button onClick={() => { window.location.hash = ""; }}><Icon name="map" />Water quality map</button><div className="authority-user"><span>RV</span><div><strong>R. Varma</strong><small>Demo reviewer</small></div></div></div>
     </aside>
     <div className="authority-main">{children}</div>
   </div>;
 }
-
-const incidents = [
-  { id: `${DEMO_CASE_PREFIX}-1048`, title: "Surface froth", lake: "Bellandur Lake", level: "High", age: "18m", status: "Acknowledged" },
-  { id: `${DEMO_CASE_PREFIX}-1047`, title: "Sewage inflow", lake: "Varthur Lake", level: "High", age: "42m", status: "New" },
-  { id: `${DEMO_CASE_PREFIX}-1044`, title: "Algae observation", lake: "Kaikondrahalli", level: "Elevated", age: "2h", status: "Reviewing" },
-  { id: `${DEMO_CASE_PREFIX}-1041`, title: "Floating waste", lake: "Agara Lake", level: "Low", age: "5h", status: "Assigned" },
-];
 
 function AuthorityDashboard({ navigate }: { navigate: (screen: Screen) => void }) {
   const live = useReports();
@@ -472,42 +466,43 @@ function AuthorityDashboard({ navigate }: { navigate: (screen: Screen) => void }
     <div className="authority-content">
       <div className="notice-bar"><Icon name="shield" /><span>This workspace uses simulated incidents and statuses for demonstration only.</span><DemoTag /></div>
       <div className="metrics">
-        <Card><span className="metric-icon red"><Icon name="file" /></span><div><p>Open incidents</p><strong>{18 + live.length}</strong><small>{live.length} from this browser · 18 seeded</small></div></Card>
-        <Card><span className="metric-icon amber"><Icon name="bell" /></span><div><p>High-risk cases</p><strong>6</strong><small>2 unreviewed</small></div></Card>
-        <Card><span className="metric-icon blue"><Icon name="check" /></span><div><p>Acknowledged</p><strong>9</strong><small>50% of open</small></div></Card>
-        <Card><span className="metric-icon green"><Icon name="shield" /></span><div><p>Verified resolutions</p><strong>12</strong><small>Last 30 days</small></div></Card>
+        <Card><span className="metric-icon red"><Icon name="file" /></span><div><p>Open incidents</p><strong>{live.length + SEEDED_CASES.length}</strong><small>{live.length} from this browser · {SEEDED_CASES.length} seeded</small></div></Card>
+        <Card><span className="metric-icon amber"><Icon name="bell" /></span><div><p>High risk</p><strong>{seededHighRisk}</strong><small>All seeded · citizen reports are not risk-rated</small></div></Card>
+        <Card><span className="metric-icon blue"><Icon name="check" /></span><div><p>Acknowledged</p><strong>{seededAcknowledged + live.filter((r) => r.status === "Acknowledged").length}</strong><small>{seededAcknowledged} seeded · {live.filter((r) => r.status === "Acknowledged").length} from this browser</small></div></Card>
+        <Card><span className="metric-icon green"><Icon name="shield" /></span><div><p>Resolutions verified</p><strong>{live.filter((r) => r.status === "Action taken").length}</strong><small>Nothing in this prototype can verify a resolution</small></div></Card>
       </div>
       <div className="dashboard-grid">
-        <Card className="authority-map-card"><div className="panel-head"><div><h2>Lake and station map</h2><p>{live.length} citizen report{live.length === 1 ? "" : "s"} · KSPCB stations · lakes © OpenStreetMap</p></div></div><MiniMap className="mm-compact" showStations seeded={incidents.map((i) => ({ id: i.id, lakeName: i.lake, title: i.title, level: i.level }))} /><div className="map-legend"><span><i className="mm-dot you" />Citizen report</span><span><i className="mm-dot demo" />Seeded case</span><span><i className="mm-dot lake" />Lake, no reading</span><span><i className="mm-dot stn" />KSPCB station</span></div></Card>
-        <Card className="priority-card"><div className="panel-head"><div><h2>Priority case</h2><p>Highest current demo signal</p></div><Badge tone="high">High risk</Badge></div><div className="priority-image"><img src={LAKE_IMAGE} alt="Bellandur Lake" /><span>STOCK IMAGE · NOT A REAL REPORT</span></div><h3>Possible surface froth</h3><p className="priority-location"><Icon name="location" className="size-4" /> Bellandur Lake · Eastern inlet</p><div className="freshness"><span><Icon name="users" />6 citizen reports</span><span><Icon name="clock" />18m old</span></div><Button className="full" onClick={() => navigate("incident")}>Open case <Icon name="arrow" /></Button></Card>
+        <Card className="authority-map-card"><div className="panel-head"><div><h2>Lake and station map</h2><p>{live.length} citizen report{live.length === 1 ? "" : "s"} · KSPCB stations · lakes © OpenStreetMap</p></div></div><MiniMap className="mm-compact" showStations /><div className="map-legend"><span><i className="mm-dot you" />Citizen report</span><span><i className="mm-dot demo" />Seeded case</span><span><i className="mm-dot lake" />Lake, no reading</span><span><i className="mm-dot stn" />KSPCB station</span></div></Card>
+        <Card className="priority-card"><div className="panel-head"><div><h2>Priority case</h2><p>Highest current demo signal</p></div><Badge tone="high">High risk</Badge></div><div className="priority-image"><img src={LAKE_IMAGE} alt="Stock photograph of a lake, used as a placeholder" /><span>STOCK IMAGE · NOT A REAL REPORT</span></div><h3>Possible surface froth</h3><p className="priority-location"><Icon name="location" className="size-4" /> {DEMO_LAKE_NAMES.east}</p><div className="freshness"><span><Icon name="users" />Seeded example</span></div><Button className="full" onClick={() => navigate("incident")}>Open case <Icon name="arrow" /></Button></Card>
       </div>
       <Card className="queue-card"><div className="panel-head"><div><h2>Incident queue</h2><p>{live.length > 0 ? `${live.length} citizen report${live.length === 1 ? "" : "s"} from this browser, then seeded cases` : "Seeded cases · no citizen reports in this browser yet"}</p></div><div className="panel-actions"><Button variant="secondary" icon="filter">All statuses</Button><Button variant="secondary">Newest first</Button></div></div>
         <div className="incident-table"><div className="table-row table-head"><span>Incident</span><span>Lake</span><span>Risk</span><span>Freshness</span><span>Status</span><span /></div>
           {live.map((r) => <div className="table-row" key={r.id}><span><strong>{r.issues.join(", ") || "Report"}</strong><small>{r.id} · Citizen report</small></span><span>{r.lakeName}</span><span><Badge tone="neutral">Not assessed</Badge></span><span>{daysSince(r.date)}d</span><span><StatusPill status={r.status} /></span><span>{r.photo ? <img className="queue-thumb" src={r.photo} alt="" /> : null}</span></div>)}
-          {incidents.map((item) => <button className="table-row" key={item.id} onClick={() => navigate("incident")}><span><strong>{item.title}</strong><small>{item.id} · Demo</small></span><span>{item.lake}</span><span><Badge tone={item.level === "High" ? "high" : item.level === "Elevated" ? "elevated" : "low"}>{item.level}</Badge></span><span>{item.age}</span><span><Badge tone="blue">{item.status}</Badge></span><span><Icon name="arrow" /></span></button>)}</div>
+          {SEEDED_CASES.map((item) => <button className="table-row" key={item.id} onClick={() => navigate("incident")}><span><strong>{item.title}</strong><small>{item.id} · Seeded example</small></span><span>{item.lake}</span><span><Badge tone={item.level === "High" ? "high" : item.level === "Elevated" ? "elevated" : "low"}>{item.level}</Badge></span><span className="muted">—</span><span><Badge tone="blue">{item.status}</Badge></span><span><Icon name="arrow" /></span></button>)}</div>
       </Card>
     </div>
   </AuthorityShell>;
 }
 
 function IncidentScreen({ navigate }: { navigate: (screen: Screen) => void }) {
+  const live = useReports();
   const [status, setStatus] = useState("Acknowledged");
   const [note, setNote] = useState("");
   return <AuthorityShell navigate={navigate} active="incidents">
-    <header className="case-header"><button className="back-link" onClick={() => navigate("authority")}><Icon name="chevron" />Incident queue</button><div className="case-title-row"><div><div className="case-tags"><Badge tone="high">High risk</Badge><span>{DEMO_CASE_PREFIX}-1048 · DEMO DATA</span></div><h1>Possible surface froth at Bellandur Lake</h1><p><Icon name="location" className="size-4" /> Eastern inlet, Bellandur Lake <span /> Submitted today at 10:44 AM</p></div><div className="case-actions"><Button variant="secondary" onClick={() => setStatus("Reviewed")}><Icon name="check" />Mark reviewed</Button><Button onClick={() => setStatus("Inspection recorded")}>Record inspection</Button></div></div></header>
+    <header className="case-header"><button className="back-link" onClick={() => navigate("authority")}><Icon name="chevron" />Incident queue</button><div className="case-title-row"><div><div className="case-tags"><Badge tone="high">High risk</Badge><span>{DEMO_CASE_PREFIX}-1048 · DEMO DATA</span></div><h1>Possible surface froth at {DEMO_LAKE_NAMES.east}</h1><p><Icon name="location" className="size-4" /> {DEMO_LAKE_NAMES.east} <span /> Seeded example</p></div><div className="case-actions"><Button variant="secondary" onClick={() => setStatus("Reviewed")}><Icon name="check" />Mark reviewed</Button><Button onClick={() => setStatus("Inspection recorded")}>Record inspection</Button></div></div></header>
     <div className="case-content">
       <div className="case-main">
         <Card><div className="panel-head"><div><h2>Citizen-submitted evidence</h2><p>Seeded example · the image is a stock placeholder</p></div><Badge tone="neutral">1 photo</Badge></div><div className="evidence-layout"><img src={LAKE_IMAGE} alt="Stock placeholder image, not a submitted photograph" /><div><div className="quote">“White froth collecting near the inlet and a strong smell.”</div><dl><div><dt>Issue selected</dt><dd>Surface froth</dd></div><div><dt>Submitted by</dt><dd>Anonymous citizen</dd></div><div><dt>Location accuracy</dt><dd>Approx. 40 metres</dd></div></dl></div></div></Card>
         <Card className="verification-card"><div className="panel-head"><div><h2>Evidence assessment</h2><p>Claims, suggestions, and verified facts are separated</p></div></div>
           <div className="assessment-grid"><div><span className="assessment-label user"><Icon name="users" />USER CLAIM</span><h3>Surface froth and foul smell</h3><p>Reported by a citizen. Not yet confirmed by a reviewer.</p></div><div><span className="assessment-label ai"><Icon name="sparkle" />AI SUGGESTION</span><h3>Likely surface froth · 84%</h3><p>Visual classification only; does not prove contamination.</p></div><div><span className="assessment-label verified"><Icon name="shield" />VERIFIED DATA</span><h3>No recent water reading</h3><p>Government water-quality data is unavailable.</p></div></div>
         </Card>
-        <Card><div className="panel-head"><div><h2>Related reports</h2><p>3 reports within 500 metres · Last 24 hours</p></div><Button variant="ghost">View all</Button></div><div className="related-list"><div><span className="mini-evidence"><img src={LAKE_IMAGE} alt="" /></span><strong>Froth near shoreline</strong><small>240m away · 32m ago</small><Badge tone="elevated">78% similar</Badge></div><div><span className="mini-evidence"><img src={LAKE_IMAGE} alt="" /></span><strong>Strong odour</strong><small>410m away · 3h ago</small><Badge tone="neutral">Related</Badge></div></div></Card>
+        <Card><div className="panel-head"><div><h2>Related reports</h2><p>3 reports within 500 metres · Last 24 hours</p></div><Button variant="ghost">View all</Button></div><div className="related-list"><div><span className="mini-evidence"><img src={LAKE_IMAGE} alt="" /></span><strong>Froth near shoreline</strong><small>Seeded example</small><Badge tone="elevated">78% similar</Badge></div><div><span className="mini-evidence"><img src={LAKE_IMAGE} alt="" /></span><strong>Strong odour</strong><small>Seeded example</small><Badge tone="neutral">Related</Badge></div></div></Card>
         <Card><div className="panel-head"><div><h2>Incident history</h2><p>Demo status changes and notes</p></div></div><StatusTimeline compact /></Card>
       </div>
       <aside className="case-sidebar">
         <Card className="status-card"><div className="eyebrow">Current status</div><div className="current-status"><span className="status-dot" /><strong>{status}</strong></div><p>Acknowledgement confirms queue entry only; it does not indicate resolution.</p><div className="divider" /><label htmlFor="status">Update status</label><select id="status" value={status} onChange={(e) => setStatus(e.target.value)}><option>Acknowledged</option><option>Reviewed</option><option>Inspection recorded</option><option>Resolution verified</option></select><Button className="full" onClick={() => setStatus(status)}>Save demo update</Button></Card>
         <Card><h3>Add internal note</h3><p className="muted">Visible to demo response teams only.</p><textarea value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add observations or next steps..." rows={4} /><Button variant="secondary" className="full" onClick={() => setNote("")}>Add note</Button></Card>
-        <Card className="source-freshness"><h3>Source freshness</h3><div><span><Icon name="users" />Citizen reports</span><strong>18m</strong></div><div><span><Icon name="satellite" />Satellite</span><strong>2h</strong></div><div><span><Icon name="water" />Water quality</span><strong className="unavailable">Unavailable</strong></div><div><span><Icon name="rain" />Rainfall</span><strong>1h</strong></div></Card>
+        <Card className="source-freshness"><h3>Source freshness</h3><div><span><Icon name="users" />Citizen reports</span><strong>{live.length > 0 ? `${daysSince(live[0].date)}d` : "None yet"}</strong></div><div><span><Icon name="satellite" />Satellite</span><strong>4 Oct 2026</strong></div><div><span><Icon name="water" />Water quality</span><strong className="unavailable">No lake reading</strong></div><div><span><Icon name="rain" />Rainfall</span><strong>Live</strong></div></Card>
         <Button variant="danger" className="full" onClick={() => setStatus("Resolution verified")}><Icon name="shield" />Record verified resolution</Button>
       </aside>
     </div>

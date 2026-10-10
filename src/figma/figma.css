@@ -300,3 +300,4 @@ textarea, select { width: 100%; padding: .75rem; resize: vertical; color: var(--
 .mm-dot.demo { background: #d97706; }
 .mm-dot.lake { background: #64748b; }
 .mm-dot.stn { background: #0284c7; }
+.incident-date.demo { display: grid; place-items: center; color: var(--color-muted); font-size: .55rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
