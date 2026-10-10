@@ -235,3 +235,7 @@ textarea, select { width: 100%; padding: .75rem; resize: vertical; color: var(--
 }
 
 .health-card { position: relative; }
+
+/* Watchlist count vs KSPCB coverage — the two numbers must not read as one. */
+.coverage-note { margin-top: .5rem; color: rgba(255,255,255,.78); font-size: .63rem; line-height: 1.35; }
+.coverage-note strong { color: #fff; }

@@ -5,8 +5,10 @@ import { countByClass, worstStations } from '../../utils/stations';
 import { getClassConfig } from '../../utils/waterQuality';
 import { formatMonth } from '../../utils/months';
 import { Hint } from '../ui/Hint';
+import type { Stats } from '../../services/stats';
 
 interface SummaryStripProps {
+  stats: Stats;
   locations: MonitoringLocation[];
   months: string[];
   selectedMonth: string;
@@ -41,7 +43,7 @@ const Delta: React.FC<{ diff: number | null }> = ({ diff }) => {
   );
 };
 
-export const SummaryStrip: React.FC<SummaryStripProps> = ({ locations, months, selectedMonth, selectedId, onSelect }) => {
+export const SummaryStrip: React.FC<SummaryStripProps> = ({ stats, locations, months, selectedMonth, selectedId, onSelect }) => {
   const idx = months.indexOf(selectedMonth);
   const prevMonth = idx > 0 ? months[idx - 1] : null;
 
@@ -55,7 +57,7 @@ export const SummaryStrip: React.FC<SummaryStripProps> = ({ locations, months, s
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <div className="mb-3 flex items-baseline justify-between gap-2">
           <h2 className="text-sm font-bold text-slate-900">
-            {total} stations sampled in {formatMonth(selectedMonth)}
+            {total} of {stats.locations} monitoring points sampled in {formatMonth(selectedMonth)}
           </h2>
           <span className="text-[11px] text-slate-500">{prevMonth ? `change vs ${formatMonth(prevMonth)}` : ''}</span>
         </div>

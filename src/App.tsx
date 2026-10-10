@@ -6,9 +6,11 @@ import { MonthSelector } from './components/Timeline/MonthSelector';
 import { StationPanel } from './components/StationPanel/StationPanel';
 import { SummaryStrip } from './components/Summary/SummaryStrip';
 import { buildLocations, monthsWithData } from './utils/stations';
+import { computeStats } from './services/stats';
+import { APP_NAME } from './brand';
 import { formatMonth } from './utils/months';
 
-export const APP_NAME = 'Jala Saakshi';
+export { APP_NAME };
 
 const Skeleton: React.FC<{ className: string }> = ({ className }) => (
   <div className={`animate-pulse rounded-2xl bg-slate-200/70 ${className}`} />
@@ -22,6 +24,8 @@ export const App: React.FC = () => {
 
   const allLocations = useMemo(() => buildLocations(readings), [readings]);
   const months = useMemo(() => monthsWithData(allLocations), [allLocations]);
+  // Every figure on screen comes from here — see src/services/stats.ts.
+  const stats = useMemo(() => computeStats(readings, allLocations), [readings, allLocations]);
   const selectedMonth = months.includes(requestedMonth) ? requestedMonth : (months[months.length - 1] ?? '');
 
   const rivers = useMemo(() => [...new Set(allLocations.map((l) => l.river))].sort(), [allLocations]);
@@ -129,6 +133,7 @@ export const App: React.FC = () => {
             <MonthSelector months={months} selectedMonth={selectedMonth} onSelectMonth={setSelectedMonth} />
 
             <SummaryStrip
+              stats={stats}
               locations={locations}
               months={months}
               selectedMonth={selectedMonth}

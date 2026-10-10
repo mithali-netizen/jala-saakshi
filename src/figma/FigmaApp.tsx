@@ -1,5 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import "./figma.css";
+import { APP_NAME, DEMO_CASE_PREFIX } from "../brand";
+import { DEMO_WATCHED_LAKES, DEMO_WATCHLIST_RISK, WATCHED_LAKES_LABEL } from "../demo/watchlist";
 
 type Screen =
   | "home"
@@ -92,7 +94,7 @@ function DemoTag() {
 }
 
 function Logo({ compact = false }: { compact?: boolean }) {
-  return <div className="logo-wrap"><span className="logo-mark"><Icon name="water" className="size-5" /></span>{!compact && <span className="logo-text">Kere Kaval</span>}</div>;
+  return <div className="logo-wrap"><span className="logo-mark"><Icon name="water" className="size-5" /></span>{!compact && <span className="logo-text">{APP_NAME}</span>}</div>;
 }
 
 function MobileHeader({ title, onBack, action }: { title?: string; onBack?: () => void; action?: ReactNode }) {
@@ -135,8 +137,9 @@ function HomeScreen({ navigate }: { navigate: (screen: Screen) => void }) {
     </div>
     <div className="screen-body overlap">
       <Card className="health-card">
-        <div><p className="eyebrow light">Bengaluru lake health</p><div className="big-stat">12 <span>monitored lakes</span></div></div>
-        <div className="health-dots"><span className="dot high" />3 High <span className="dot elevated" />5 Elevated <span className="dot low" />4 Low</div>
+        <div><p className="eyebrow light">Bengaluru lake health</p><div className="big-stat">{DEMO_WATCHED_LAKES} <span>{WATCHED_LAKES_LABEL}</span></div></div>
+        <div className="health-dots"><span className="dot high" />{DEMO_WATCHLIST_RISK.high} High <span className="dot elevated" />{DEMO_WATCHLIST_RISK.elevated} Elevated <span className="dot low" />{DEMO_WATCHLIST_RISK.low} Low</div>
+        <p className="coverage-note">KSPCB publishes monthly readings for <strong>0</strong> lakes. This watchlist is our own.</p>
         <DemoTag />
       </Card>
       <SectionTitle action={<button className="text-button" onClick={() => navigate("map")}>View map <Icon name="arrow" className="size-4" /></button>}>Lake needing attention</SectionTitle>
@@ -280,7 +283,7 @@ function TrackingScreen({ navigate }: { navigate: (screen: Screen) => void }) {
     <div className="screen-body tracking-screen">
       <div className="report-tabs"><button className="active">Active <span>2</span></button><button>Resolved <span>1</span></button></div>
       <Card className="report-summary">
-        <div className="report-summary-top"><div><div className="eyebrow">Report #KK-1048 · DEMO</div><h1>Possible surface froth</h1></div><Badge tone="blue">Acknowledged</Badge></div>
+        <div className="report-summary-top"><div><div className="eyebrow">Report #{DEMO_CASE_PREFIX}-1048 · DEMO</div><h1>Possible surface froth</h1></div><Badge tone="blue">Acknowledged</Badge></div>
         <div className="report-meta"><span><Icon name="location" className="size-4" /> Bellandur Lake</span><span><Icon name="clock" className="size-4" /> Today, 10:44 AM</span></div>
         <div className="evidence-strip"><img src={LAKE_IMAGE} alt="Report evidence thumbnail" /><div><strong>1 photo attached</strong><span>User-submitted evidence</span></div></div>
       </Card>
@@ -304,10 +307,10 @@ function AuthorityShell({ children, active = "dashboard", navigate }: { children
 }
 
 const incidents = [
-  { id: "KK-1048", title: "Surface froth", lake: "Bellandur Lake", level: "High", age: "18m", status: "Acknowledged" },
-  { id: "KK-1047", title: "Sewage inflow", lake: "Varthur Lake", level: "High", age: "42m", status: "New" },
-  { id: "KK-1044", title: "Algae observation", lake: "Kaikondrahalli", level: "Elevated", age: "2h", status: "Reviewing" },
-  { id: "KK-1041", title: "Floating waste", lake: "Agara Lake", level: "Low", age: "5h", status: "Assigned" },
+  { id: `${DEMO_CASE_PREFIX}-1048`, title: "Surface froth", lake: "Bellandur Lake", level: "High", age: "18m", status: "Acknowledged" },
+  { id: `${DEMO_CASE_PREFIX}-1047`, title: "Sewage inflow", lake: "Varthur Lake", level: "High", age: "42m", status: "New" },
+  { id: `${DEMO_CASE_PREFIX}-1044`, title: "Algae observation", lake: "Kaikondrahalli", level: "Elevated", age: "2h", status: "Reviewing" },
+  { id: `${DEMO_CASE_PREFIX}-1041`, title: "Floating waste", lake: "Agara Lake", level: "Low", age: "5h", status: "Assigned" },
 ];
 
 function AuthorityDashboard({ navigate }: { navigate: (screen: Screen) => void }) {
@@ -322,7 +325,7 @@ function AuthorityDashboard({ navigate }: { navigate: (screen: Screen) => void }
         <Card><span className="metric-icon green"><Icon name="shield" /></span><div><p>Verified resolutions</p><strong>12</strong><small>Last 30 days</small></div></Card>
       </div>
       <div className="dashboard-grid">
-        <Card className="authority-map-card"><div className="panel-head"><div><h2>Lake risk map</h2><p>12 monitored lakes · Demo data</p></div><Button variant="secondary" icon="filter">Filters</Button></div><MapCanvas compact /><div className="map-legend"><span><i className="dot high" />High 3</span><span><i className="dot elevated" />Elevated 5</span><span><i className="dot low" />Low 4</span><button>View full map <Icon name="arrow" className="size-4" /></button></div></Card>
+        <Card className="authority-map-card"><div className="panel-head"><div><h2>Lake risk map</h2><p>{DEMO_WATCHED_LAKES} {WATCHED_LAKES_LABEL} · Demo data · 0 in KSPCB reports</p></div><Button variant="secondary" icon="filter">Filters</Button></div><MapCanvas compact /><div className="map-legend"><span><i className="dot high" />High {DEMO_WATCHLIST_RISK.high}</span><span><i className="dot elevated" />Elevated {DEMO_WATCHLIST_RISK.elevated}</span><span><i className="dot low" />Low {DEMO_WATCHLIST_RISK.low}</span><button>View full map <Icon name="arrow" className="size-4" /></button></div></Card>
         <Card className="priority-card"><div className="panel-head"><div><h2>Priority case</h2><p>Highest current demo signal</p></div><Badge tone="high">High risk</Badge></div><div className="priority-image"><img src={LAKE_IMAGE} alt="Bellandur Lake" /><span>USER-SUBMITTED</span></div><h3>Possible surface froth</h3><p className="priority-location"><Icon name="location" className="size-4" /> Bellandur Lake · Eastern inlet</p><div className="freshness"><span><Icon name="users" />6 citizen reports</span><span><Icon name="clock" />18m old</span></div><Button className="full" onClick={() => navigate("incident")}>Open case <Icon name="arrow" /></Button></Card>
       </div>
       <Card className="queue-card"><div className="panel-head"><div><h2>Incident queue</h2><p>Prioritized by risk, recency, and report volume</p></div><div className="panel-actions"><Button variant="secondary" icon="filter">All statuses</Button><Button variant="secondary">Newest first</Button></div></div>
@@ -336,7 +339,7 @@ function IncidentScreen({ navigate }: { navigate: (screen: Screen) => void }) {
   const [status, setStatus] = useState("Acknowledged");
   const [note, setNote] = useState("");
   return <AuthorityShell navigate={navigate} active="incidents">
-    <header className="case-header"><button className="back-link" onClick={() => navigate("authority")}><Icon name="chevron" />Incident queue</button><div className="case-title-row"><div><div className="case-tags"><Badge tone="high">High risk</Badge><span>KK-1048 · DEMO DATA</span></div><h1>Possible surface froth at Bellandur Lake</h1><p><Icon name="location" className="size-4" /> Eastern inlet, Bellandur Lake <span /> Submitted today at 10:44 AM</p></div><div className="case-actions"><Button variant="secondary" onClick={() => setStatus("Reviewed")}><Icon name="check" />Mark reviewed</Button><Button onClick={() => setStatus("Inspection recorded")}>Record inspection</Button></div></div></header>
+    <header className="case-header"><button className="back-link" onClick={() => navigate("authority")}><Icon name="chevron" />Incident queue</button><div className="case-title-row"><div><div className="case-tags"><Badge tone="high">High risk</Badge><span>{DEMO_CASE_PREFIX}-1048 · DEMO DATA</span></div><h1>Possible surface froth at Bellandur Lake</h1><p><Icon name="location" className="size-4" /> Eastern inlet, Bellandur Lake <span /> Submitted today at 10:44 AM</p></div><div className="case-actions"><Button variant="secondary" onClick={() => setStatus("Reviewed")}><Icon name="check" />Mark reviewed</Button><Button onClick={() => setStatus("Inspection recorded")}>Record inspection</Button></div></div></header>
     <div className="case-content">
       <div className="case-main">
         <Card><div className="panel-head"><div><h2>Citizen-submitted evidence</h2><p>User claim · Not independently verified</p></div><Badge tone="neutral">1 photo</Badge></div><div className="evidence-layout"><img src={LAKE_IMAGE} alt="Citizen-submitted demo evidence" /><div><div className="quote">“White froth collecting near the inlet and a strong smell.”</div><dl><div><dt>Issue selected</dt><dd>Surface froth</dd></div><div><dt>Submitted by</dt><dd>Anonymous citizen</dd></div><div><dt>Location accuracy</dt><dd>Approx. 40 metres</dd></div></dl></div></div></Card>
