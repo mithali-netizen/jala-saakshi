@@ -7,6 +7,7 @@ import type { GeoJsonObject } from 'geojson';
 import { Maximize2 } from 'lucide-react';
 import { GEOJSON_URL, RIVERS_URL } from '../../config';
 import type { MonitoringLocation } from '../../utils/stations';
+import type { WaterBody } from '../../services/waterBodies';
 import { getClassConfig } from '../../utils/waterQuality';
 import { formatMonth } from '../../utils/months';
 
@@ -20,6 +21,14 @@ interface RiverMapProps {
   onSelect: (id: string) => void;
   /** Panel docked over the map; used to keep the selected pin out from under it. */
   panelOpen: boolean;
+  /** Water bodies with no KSPCB monitoring point, drawn as their own layer. */
+  waterBodies?: WaterBody[];
+  showWaterBodies?: boolean;
+  onToggleWaterBodies?: (next: boolean) => void;
+  /** Dims the station pins so the gap layer reads clearly. */
+  dimStations?: boolean;
+  /** Fit the view to these bounds when they change. */
+  fitTo?: L.LatLngBoundsExpression | null;
 }
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -212,6 +221,76 @@ function StationsLayer({ locations, selectedMonth, selectedId, onSelect, panelOp
   return null;
 }
 
+// ─── Unmonitored water bodies ────────────────────────────────────────────────
+
+/**
+ * Drawn outside the marker cluster: these are the gap, so they must never be folded
+ * into a station count bubble.
+ */
+function WaterBodiesLayer({
+  bodies,
+  visible,
+  selectedId,
+  onSelect,
+}: {
+  bodies: WaterBody[];
+  visible: boolean;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  const map = useMap();
+  const live = useRef({ onSelect });
+  live.current = { onSelect };
+
+  useEffect(() => {
+    if (!visible) return;
+    const group = L.layerGroup().addTo(map);
+
+    for (const body of bodies) {
+      const selected = body.id === selectedId;
+      if (body.outline) {
+        L.polygon(body.outline, {
+          color: '#be123c',
+          weight: selected ? 3 : 2,
+          fillColor: '#f43f5e',
+          fillOpacity: selected ? 0.45 : 0.3,
+        })
+          .on('click', () => live.current.onSelect(body.id))
+          .addTo(group);
+      }
+      L.marker([body.lat, body.lng], {
+        icon: L.divIcon({
+          className: 'wb-pin-wrap',
+          html: `<div class="wb-pin${selected ? ' is-selected' : ''}">
+                   <span class="wb-pin-dot"></span>${esc(body.name)}
+                   <small>${esc(body.status)}</small>
+                 </div>`,
+          iconSize: [0, 0],
+        }),
+        zIndexOffset: 1000,
+      })
+        .on('click', () => live.current.onSelect(body.id))
+        .addTo(group);
+    }
+
+    return () => {
+      map.removeLayer(group);
+    };
+  }, [bodies, visible, selectedId, map]);
+
+  return null;
+}
+
+/** Re-fits the view whenever the dashboard asks for a different extent. */
+function FitController({ bounds }: { bounds: L.LatLngBoundsExpression | null | undefined }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!bounds) return;
+    map.flyToBounds(bounds, { padding: [48, 48], maxZoom: 11, duration: 0.6 });
+  }, [bounds, map]);
+  return null;
+}
+
 // ─── Container: keeps the map sized correctly when the layout shifts ─────────
 
 function SizeWatcher() {
@@ -249,7 +328,11 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
   }, [mapInstance]);
 
   return (
-    <div className="relative h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-xs">
+    <div
+      className={`relative h-full w-full overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-xs ${
+        props.dimStations ? 'dim-stations' : ''
+      }`}
+    >
       <MapContainer
         ref={setMapInstance}
         bounds={KARNATAKA_BOUNDS}
@@ -273,6 +356,13 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
           />
         )}
         <StationsLayer {...props} />
+        <WaterBodiesLayer
+          bodies={props.waterBodies ?? []}
+          visible={props.showWaterBodies ?? false}
+          selectedId={props.selectedId}
+          onSelect={props.onSelect}
+        />
+        <FitController bounds={props.fitTo} />
         <SizeWatcher />
       </MapContainer>
 
@@ -294,6 +384,17 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
           />
           River lines
         </label>
+        {props.waterBodies && props.waterBodies.length > 0 && (
+          <label className="inline-flex h-8 cursor-pointer select-none items-center gap-2 rounded-lg border border-rose-200 bg-white/95 px-2.5 text-xs font-medium text-rose-800 shadow-xs backdrop-blur">
+            <input
+              type="checkbox"
+              checked={props.showWaterBodies ?? false}
+              onChange={(e) => props.onToggleWaterBodies?.(e.target.checked)}
+              className="h-3.5 w-3.5 accent-rose-700"
+            />
+            Unmonitored water bodies ({props.waterBodies.length})
+          </label>
+        )}
       </div>
 
       {/* Legend */}

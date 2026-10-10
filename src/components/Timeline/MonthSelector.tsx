@@ -7,11 +7,13 @@ interface MonthSelectorProps {
   months: string[];
   selectedMonth: string;
   onSelectMonth: (month: string) => void;
+  /** 'bar' is the condensed form that sits in the dashboard top bar. */
+  variant?: 'card' | 'bar';
 }
 
 const PLAY_INTERVAL_MS = 1400;
 
-export const MonthSelector: React.FC<MonthSelectorProps> = ({ months, selectedMonth, onSelectMonth }) => {
+export const MonthSelector: React.FC<MonthSelectorProps> = ({ months, selectedMonth, onSelectMonth, variant = 'card' }) => {
   const [playing, setPlaying] = useState(false);
   const chipRefs = useRef(new Map<string, HTMLButtonElement>());
 
@@ -74,6 +76,52 @@ export const MonthSelector: React.FC<MonthSelectorProps> = ({ months, selectedMo
 
   const btn =
     'inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-35 focus-visible:outline-2 focus-visible:outline-teal-700';
+
+  if (variant === 'bar') {
+    return (
+      <div className="flex items-center gap-2" role="group" aria-label="Time period">
+        <button
+          type="button"
+          onClick={togglePlay}
+          aria-label={playing ? 'Pause' : 'Play through months'}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-teal-700 text-white transition-colors hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700"
+        >
+          {playing ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
+        </button>
+        <button type="button" className={btn} onClick={manual(() => step(-1))} disabled={index <= 0} aria-label="Previous month">
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+        <span className="min-w-[5.5rem] text-center text-sm font-bold tabular-nums text-slate-900">
+          {formatMonth(selectedMonth)}
+        </span>
+        <button
+          type="button"
+          className={btn}
+          onClick={manual(() => step(1))}
+          disabled={index >= months.length - 1}
+          aria-label="Next month"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        <input
+          type="range"
+          min={0}
+          max={months.length - 1}
+          value={index}
+          onChange={(e) => {
+            setPlaying(false);
+            onSelectMonth(months[Number(e.target.value)]);
+          }}
+          aria-label="Month slider"
+          aria-valuetext={formatMonth(selectedMonth)}
+          className="h-1.5 w-28 cursor-pointer appearance-none rounded-full bg-slate-200 accent-teal-700 lg:w-40"
+        />
+        <span className="hidden text-[11px] text-slate-500 tabular-nums sm:inline">
+          {index + 1}/{months.length}
+        </span>
+      </div>
+    );
+  }
 
   return (
     <section aria-label="Time period" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">

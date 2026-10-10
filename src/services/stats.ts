@@ -46,7 +46,9 @@ export interface Stats {
   months: string[];
   firstMonth: string;
   lastMonth: string;
-  /** Points carrying a real reading in the selected month. */
+  /** Points that appear in the given month's report at all (reading or not). */
+  listedIn: (month: string) => number;
+  /** ...of those, the ones carrying an actual reading. */
   sampledIn: (month: string) => number;
   nearestToDoddagubbi: NearestPoint;
   demo: {
@@ -71,9 +73,11 @@ export function computeStats(readings: WaterReading[], locations?: MonitoringLoc
     .map((l) => ({ name: l.name, river: l.river, km: haversineKm(DODDAGUBBI.lat, DODDAGUBBI.lng, l.lat, l.lng) }))
     .sort((a, b) => a.km - b.km)[0] ?? { name: '—', river: '—', km: 0 };
 
+  const listedByMonth = new Map<string, number>();
   const sampledByMonth = new Map<string, number>();
   for (const l of locs) {
     for (const [m, r] of l.byMonth) {
+      listedByMonth.set(m, (listedByMonth.get(m) ?? 0) + 1);
       if (r.status !== 'no_access' && hasValues(r)) sampledByMonth.set(m, (sampledByMonth.get(m) ?? 0) + 1);
     }
   }
@@ -89,6 +93,7 @@ export function computeStats(readings: WaterReading[], locations?: MonitoringLoc
     months,
     firstMonth: months[0] ?? '',
     lastMonth: months[months.length - 1] ?? '',
+    listedIn: (month) => listedByMonth.get(month) ?? 0,
     sampledIn: (month) => sampledByMonth.get(month) ?? 0,
     nearestToDoddagubbi: nearest,
     demo: { watchedLakes: DEMO_WATCHED_LAKES },

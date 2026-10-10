@@ -133,3 +133,45 @@ html, body, #root {
 .leaflet-marker-icon.stn-cluster-wrap:focus {
   outline: none;
 }
+
+/* ── Unmonitored water bodies layer ──────────────────────────────────────────── */
+.wb-pin-wrap { background: none; border: 0; }
+
+.wb-pin {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  margin-top: -8px;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px;
+  border: 2px solid #be123c;
+  border-radius: 8px;
+  background: #fff;
+  color: #881337;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25);
+  cursor: pointer;
+}
+
+.wb-pin.is-selected {
+  outline: 3px solid rgba(190, 18, 60, 0.35);
+  outline-offset: 1px;
+}
+
+.wb-pin small { font-size: 10px; font-weight: 600; color: #be123c; }
+
+.wb-pin-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 5px;
+  border-radius: 9999px;
+  background: #be123c;
+}
+
+/* Station pins step back when the gap layer is the point of the view. */
+.dim-stations .stn-pin-wrap,
+.dim-stations .stn-cluster-wrap { opacity: 0.3; }

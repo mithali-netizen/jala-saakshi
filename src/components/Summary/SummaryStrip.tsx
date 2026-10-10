@@ -14,6 +14,8 @@ interface SummaryStripProps {
   selectedMonth: string;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  /** Which half to render; the dashboard puts them in different columns. */
+  show?: 'both' | 'classes' | 'worst';
 }
 
 const TILES = [
@@ -43,7 +45,7 @@ const Delta: React.FC<{ diff: number | null }> = ({ diff }) => {
   );
 };
 
-export const SummaryStrip: React.FC<SummaryStripProps> = ({ stats, locations, months, selectedMonth, selectedId, onSelect }) => {
+export const SummaryStrip: React.FC<SummaryStripProps> = ({ stats, locations, months, selectedMonth, selectedId, onSelect, show = 'both' }) => {
   const idx = months.indexOf(selectedMonth);
   const prevMonth = idx > 0 ? months[idx - 1] : null;
 
@@ -53,39 +55,50 @@ export const SummaryStrip: React.FC<SummaryStripProps> = ({ stats, locations, mo
   const total = Object.values(counts).reduce((s, n) => s + n, 0);
 
   return (
-    <section aria-label="Summary for the month" className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-        <div className="mb-3 flex items-baseline justify-between gap-2">
+    <section
+      aria-label="Summary for the month"
+      className={show === 'both' ? 'grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]' : 'contents'}
+    >
+      {show !== 'worst' && (
+      <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-xs">
+        <div className="mb-2 flex items-baseline justify-between gap-2">
           <h2 className="text-sm font-bold text-slate-900">
-            {total} of {stats.locations} monitoring points sampled in {formatMonth(selectedMonth)}
+            {total} of {stats.locations} points in the {formatMonth(selectedMonth)} report
           </h2>
-          <span className="text-[11px] text-slate-500">{prevMonth ? `change vs ${formatMonth(prevMonth)}` : ''}</span>
+          <span className="shrink-0 text-[11px] text-slate-500">
+            {prevMonth ? `vs ${formatMonth(prevMonth)}` : 'first month'}
+          </span>
         </div>
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {/* One row per class: this sits in a narrow rail, so it reads down, not across. */}
+        <ul className="divide-y divide-slate-100">
           {TILES.map(({ key, label }) => {
             const v = getClassConfig(key === 'none' ? null : key);
             return (
-              <div key={key} className="rounded-xl border border-slate-200 px-2.5 py-2">
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
-                    style={{ background: v.bgHex }}
-                    aria-hidden
-                  >
-                    {v.letter}
-                  </span>
-                  <span className="text-xl font-bold leading-none tabular-nums text-slate-900">{counts[key]}</span>
-                </div>
-                <div className="mt-1 truncate text-[11px] text-slate-600" title={label}>
-                  {key === 'none' ? label : `Class ${key}`}
-                </div>
-                <Delta diff={prevCounts ? counts[key] - prevCounts[key] : null} />
-              </div>
+              <li key={key} className="flex items-center gap-2 py-1.5">
+                <span
+                  className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                  style={{ background: v.bgHex }}
+                  aria-hidden
+                >
+                  {v.letter}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-xs text-slate-700" title={label}>
+                  {key === 'none' ? 'No class recorded' : label}
+                </span>
+                <span className="w-7 text-right text-base font-bold leading-none tabular-nums text-slate-900">
+                  {counts[key]}
+                </span>
+                <span className="w-16 text-right">
+                  <Delta diff={prevCounts ? counts[key] - prevCounts[key] : null} />
+                </span>
+              </li>
             );
           })}
-        </div>
+        </ul>
       </div>
+      )}
 
+      {show !== 'classes' && (
       <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
         <h2 className="mb-2 text-sm font-bold text-slate-900">
           <Hint text="Ranked by CPCB class first, then by lowest dissolved oxygen." align="left">
@@ -129,6 +142,7 @@ export const SummaryStrip: React.FC<SummaryStripProps> = ({ stats, locations, mo
           </ol>
         )}
       </div>
+      )}
     </section>
   );
 };
