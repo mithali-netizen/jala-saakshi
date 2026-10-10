@@ -1,214 +1,154 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { AlertTriangle, Filter, RefreshCw } from 'lucide-react';
 import { useReadings } from './hooks/useReadings';
 import { RiverMap } from './components/Map/RiverMap';
 import { MonthSelector } from './components/Timeline/MonthSelector';
 import { StationPanel } from './components/StationPanel/StationPanel';
-import { AlertTriangle, RefreshCw, Filter } from 'lucide-react';
+import { SummaryStrip } from './components/Summary/SummaryStrip';
+import { buildLocations, monthsWithData } from './utils/stations';
+import { formatMonth } from './utils/months';
+
+export const APP_NAME = 'Jala Saakshi';
+
+const Skeleton: React.FC<{ className: string }> = ({ className }) => (
+  <div className={`animate-pulse rounded-2xl bg-slate-200/70 ${className}`} />
+);
 
 export const App: React.FC = () => {
-  const {
-    readings,
-    stations,
-    months,
-    selectedMonth,
-    setSelectedMonth,
-    isLoading,
-    error,
-    hasRiverOrderMissingWarning,
-    reload,
-  } = useReadings();
+  const { readings, selectedMonth: requestedMonth, setSelectedMonth, isLoading, error, reload } = useReadings();
 
-  const [selectedStationCode, setSelectedStationCode] = useState<string | null>(null);
-  const [selectedRiverFilter, setSelectedRiverFilter] = useState<string>('all');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [riverFilter, setRiverFilter] = useState('all');
 
-  // Dynamically extract rivers from loaded stations (purely data-driven)
-  const availableRivers = useMemo(() => {
-    const set = new Set<string>();
-    stations.forEach((s) => {
-      if (s.river) set.add(s.river);
-    });
-    return Array.from(set).sort();
-  }, [stations]);
+  const allLocations = useMemo(() => buildLocations(readings), [readings]);
+  const months = useMemo(() => monthsWithData(allLocations), [allLocations]);
+  const selectedMonth = months.includes(requestedMonth) ? requestedMonth : (months[months.length - 1] ?? '');
 
-  // Filter stations if user selects a specific river
-  const filteredStations = useMemo(() => {
-    if (selectedRiverFilter === 'all') return stations;
-    return stations.filter((s) => s.river === selectedRiverFilter);
-  }, [stations, selectedRiverFilter]);
-
-  const selectedStation = useMemo(() => {
-    if (!selectedStationCode) return null;
-    return stations.find((s) => s.station_code === selectedStationCode) || null;
-  }, [stations, selectedStationCode]);
+  const rivers = useMemo(() => [...new Set(allLocations.map((l) => l.river))].sort(), [allLocations]);
+  const locations = useMemo(
+    () => (riverFilter === 'all' ? allLocations : allLocations.filter((l) => l.river === riverFilter)),
+    [allLocations, riverFilter],
+  );
+  const selectedLocation = useMemo(
+    () => locations.find((l) => l.id === selectedId) ?? null,
+    [locations, selectedId],
+  );
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-800 flex flex-col font-sans">
-      {/* Top Header - Clean, professional, no logo image/icon */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+    <div className="flex min-h-screen flex-col bg-slate-50 font-sans text-slate-800">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 leading-tight">
-                India River Water Quality Explorer
-              </h1>
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                National Dashboard
-              </span>
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Explore river water quality monitoring readings in plain language for citizens across India
-            </p>
+            <h1 className="text-xl font-bold leading-tight tracking-tight text-slate-900">{APP_NAME}</h1>
+            <p className="text-xs text-slate-500">Karnataka water quality: KSPCB monitoring data</p>
           </div>
-
-          <div className="flex items-center gap-2.5">
-            {/* Dynamic River Filter if dataset contains multiple rivers */}
-            {availableRivers.length > 1 && (
-              <div className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 text-xs">
-                <Filter className="w-3.5 h-3.5 text-slate-500" />
+          <div className="flex items-center gap-2">
+            {rivers.length > 1 && (
+              <label className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-xs">
+                <Filter className="h-3.5 w-3.5 text-slate-500" aria-hidden />
                 <select
-                  value={selectedRiverFilter}
+                  value={riverFilter}
                   onChange={(e) => {
-                    setSelectedRiverFilter(e.target.value);
-                    setSelectedStationCode(null);
+                    setRiverFilter(e.target.value);
+                    setSelectedId(null);
                   }}
-                  aria-label="Filter by River"
-                  className="bg-transparent font-medium text-slate-800 text-xs focus:outline-none cursor-pointer"
+                  aria-label="Filter by river"
+                  className="cursor-pointer bg-transparent font-medium text-slate-800 focus:outline-none"
                 >
-                  <option value="all">All Rivers ({availableRivers.length})</option>
-                  {availableRivers.map((r) => (
+                  <option value="all">All rivers ({rivers.length})</option>
+                  {rivers.map((r) => (
                     <option key={r} value={r}>
-                      {r} River
+                      {r}
                     </option>
                   ))}
                 </select>
-              </div>
+              </label>
             )}
-
             <button
+              type="button"
               onClick={reload}
               title="Refresh data"
               aria-label="Refresh data"
-              className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-800 focus-visible:outline-2 focus-visible:outline-indigo-600"
             >
-              <RefreshCw className="w-4 h-4" />
+              <RefreshCw className="h-4 w-4" />
             </button>
           </div>
         </div>
       </header>
 
-      {/* Dev Warning Banner if river_order is missing */}
-      {hasRiverOrderMissingWarning && (
-        <div className="bg-amber-500 text-amber-950 px-4 py-2 text-xs font-medium flex items-center justify-center gap-2 border-b border-amber-600">
-          <AlertTriangle className="w-4 h-4 shrink-0 text-amber-950" />
-          <span>
-            <strong>Dev Warning:</strong> One or more station rows in the data file are missing the{' '}
-            <code className="bg-amber-400/50 px-1 rounded font-mono">river_order</code> attribute.
-            Stations may not follow the strict upstream-to-downstream sequence.
-          </span>
-        </div>
-      )}
-
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 flex flex-col gap-4">
-        {/* Month Selector Control */}
-        <MonthSelector
-          months={months}
-          selectedMonth={selectedMonth}
-          onSelectMonth={setSelectedMonth}
-        />
-
-        {/* Dynamic Data-Driven River Basin Banner */}
-        {!isLoading && !error && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-3.5 text-xs text-blue-900 flex flex-wrap items-center justify-between gap-2 shadow-xs">
-            <div className="flex items-center gap-2">
-              <span className="font-semibold text-blue-950">Active Monitoring Network:</span>
-              <span>
-                {filteredStations.length} station{filteredStations.length !== 1 ? 's' : ''} loaded
-                {availableRivers.length > 0 && ` across ${availableRivers.join(', ')} River`}
-              </span>
-            </div>
-            <div className="text-blue-700 font-medium">
-              Click any station pin on the map to review plain-language insights, trends, and citizen action.
-            </div>
-          </div>
-        )}
-
-        {/* Loading State */}
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-4 px-4 py-4 sm:px-6">
         {isLoading && (
-          <div className="flex-1 min-h-[450px] flex flex-col items-center justify-center bg-white rounded-2xl border border-slate-200 p-8 shadow-xs">
-            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
-            <p className="text-sm font-medium text-slate-700">Loading river water quality data...</p>
-            <p className="text-xs text-slate-400 mt-1">Runtime fetch from data endpoint</p>
-          </div>
+          <>
+            <Skeleton className="h-[148px]" />
+            <Skeleton className="h-[132px]" />
+            <Skeleton className="h-[60vh] min-h-[460px]" />
+          </>
         )}
 
-        {/* Friendly Error State */}
         {!isLoading && error && (
-          <div className="flex-1 min-h-[400px] flex flex-col items-center justify-center bg-white rounded-2xl border border-red-200 p-8 text-center shadow-xs">
-            <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-3">
-              <AlertTriangle className="w-6 h-6" />
-            </div>
-            <h2 className="text-base font-semibold text-slate-900 mb-1">
-              Could not load water quality readings
-            </h2>
-            <p className="text-sm text-slate-600 max-w-md mb-4">
-              {error}. Please verify that the data file exists and is accessible.
-            </p>
+          <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-rose-200 bg-white p-8 text-center">
+            <AlertTriangle className="mb-3 h-8 w-8 text-rose-600" />
+            <h2 className="text-base font-semibold text-slate-900">Could not load water quality readings</h2>
+            <p className="mt-1 max-w-md text-sm text-slate-600">{error}</p>
             <button
+              type="button"
               onClick={reload}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-xs"
+              className="mt-4 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
             >
-              <RefreshCw className="w-4 h-4" />
-              Try Again
+              <RefreshCw className="h-4 w-4" /> Try again
             </button>
           </div>
         )}
 
-        {/* Main Map + Side Panel Grid */}
-        {!isLoading && !error && (
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 items-start min-h-[560px]">
-            {/* Map column */}
-            <div
-              className={`h-[60vh] lg:h-[70vh] transition-all duration-300 ${
-                selectedStation ? 'lg:col-span-7 xl:col-span-7' : 'lg:col-span-12'
-              }`}
-            >
-              <RiverMap
-                stations={filteredStations}
-                readings={readings}
-                selectedMonth={selectedMonth}
-                selectedStationCode={selectedStationCode}
-                onSelectStation={(code) => setSelectedStationCode(code)}
-              />
-            </div>
-
-            {/* Desktop Side Panel / Mobile Bottom Sheet */}
-            {selectedStation && (
-              <div className="lg:col-span-5 xl:col-span-5 lg:h-[70vh] flex flex-col">
-                <StationPanel
-                  station={selectedStation}
-                  allStations={filteredStations}
-                  readings={readings}
-                  months={months}
-                  selectedMonth={selectedMonth}
-                  onClose={() => setSelectedStationCode(null)}
-                />
-              </div>
-            )}
+        {!isLoading && !error && months.length === 0 && (
+          <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-600">
+            No monitoring data found.
           </div>
+        )}
+
+        {!isLoading && !error && months.length > 0 && (
+          <>
+            <MonthSelector months={months} selectedMonth={selectedMonth} onSelectMonth={setSelectedMonth} />
+
+            <SummaryStrip
+              locations={locations}
+              months={months}
+              selectedMonth={selectedMonth}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
+
+            <div className="relative h-[68vh] min-h-[480px]">
+              <RiverMap
+                locations={locations}
+                selectedMonth={selectedMonth}
+                selectedId={selectedLocation?.id ?? null}
+                onSelect={setSelectedId}
+                panelOpen={!!selectedLocation}
+              />
+              {selectedLocation && (
+                <div className="pointer-events-none absolute inset-x-2 bottom-2 z-[500] flex max-h-[62%] lg:inset-x-auto lg:bottom-3 lg:right-3 lg:top-3 lg:max-h-none lg:w-[420px]">
+                  <div className="pointer-events-auto flex max-h-full w-full">
+                    <StationPanel
+                      key={selectedLocation.id}
+                      location={selectedLocation}
+                      selectedMonth={selectedMonth}
+                      onClose={() => setSelectedId(null)}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
         )}
       </main>
 
-      {/* About this data footer */}
-      <footer className="bg-white border-t border-slate-200 py-4 px-4 sm:px-6 text-xs text-slate-500 mt-auto">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <div>
-            <span className="font-semibold text-slate-700">About this data:</span> Source is CPCB and State Pollution Control Board monthly water quality monitoring reports
-            {months.length > 0 && ` (${months[0]} to ${months[months.length - 1]})`}. Readings are point-in-time samples.
-          </div>
-          <div className="text-[11px] text-slate-400">
-            National Environmental Hackathon • Citizen Science
-          </div>
+      <footer className="border-t border-slate-200 bg-white px-4 py-4 text-xs text-slate-500 sm:px-6">
+        <div className="mx-auto max-w-7xl">
+          <span className="font-semibold text-slate-700">About this data:</span> KSPCB monthly water quality reports
+          {months.length > 0 && `, ${formatMonth(months[0])} to ${formatMonth(months[months.length - 1])}`}. Readings are
+          point-in-time samples, and only months with data are shown.
         </div>
       </footer>
     </div>
