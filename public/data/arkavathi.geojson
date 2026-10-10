@@ -1,0 +1,36 @@
+{
+  "type": "FeatureCollection",
+  "name": "Arkavathi River Course (Placeholder Geometry)",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Arkavathi River",
+        "description": "Placeholder polyline geometry for Arkavathi River (to be replaced with India-WRIS geometry)",
+        "basin": "Cauvery (Kaveri) Basin"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [77.6820, 13.3700],
+          [77.5850, 13.2500],
+          [77.5210, 13.1850],
+          [77.4912, 13.1415],
+          [77.4650, 13.0900],
+          [77.3980, 13.0200],
+          [77.3450, 12.9730],
+          [77.3150, 12.9100],
+          [77.2950, 12.8350],
+          [77.2830, 12.7120],
+          [77.3100, 12.6500],
+          [77.3620, 12.6050],
+          [77.4120, 12.5735],
+          [77.4350, 12.5280],
+          [77.4420, 12.4500],
+          [77.4580, 12.3800],
+          [77.4450, 12.2850]
+        ]
+      }
+    }
+  ]
+}
