@@ -1,11 +1,27 @@
 # Jala Saakshi · ಜಲ ಸಾಕ್ಷಿ
 ### *The Water’s Witness — Citizen Science, Satellite Surveillance & Environmental Accountability for Bengaluru’s Lakes and Rivers*
 
-[![Built on AWS](https://img.shields.io/badge/AWS-Serverless%20%7C%20Bedrock%20Nova%20Lite-FF9900?logo=amazon-aws&logoColor=white)](https://aws.amazon.com)
-[![Amplify Hosting](https://img.shields.io/badge/Deploy-AWS%20Amplify%20%2B%20CloudFront-ED592F?logo=aws-amplify&logoColor=white)](https://aws.amazon.com/amplify/)
-[![React 19](https://img.shields.io/badge/Frontend-React%2019%20%2B%20Vite%20%2B%20Leaflet-61DAFB?logo=react&logoColor=black)](https://react.dev)
-[![Python 3.12](https://img.shields.io/badge/Backend-Python%203.12%20Lambda%20%2B%20SAM-3776AB?logo=python&logoColor=white)](https://python.org)
-[![Kannada & English](https://img.shields.io/badge/Language-ಕನ್ನಡ%20%7C%20English-007ACC)](#)
+<p align="center">
+  <a href="https://aws.amazon.com"><img src="https://img.shields.io/badge/AWS-Serverless%20Architecture-FF9900?logo=amazon-aws&logoColor=white" alt="Built on AWS" /></a>
+  <a href="https://aws.amazon.com/amplify/"><img src="https://img.shields.io/badge/AWS%20Amplify-Hosting%20%26%20CI%2FCD-ED592F?logo=aws-amplify&logoColor=white" alt="Amplify Hosting" /></a>
+  <a href="https://aws.amazon.com/cloudfront/"><img src="https://img.shields.io/badge/Amazon%20CloudFront-Edge%20CDN-D05C17?logo=amazon-aws&logoColor=white" alt="CloudFront" /></a>
+  <a href="https://aws.amazon.com/bedrock/"><img src="https://img.shields.io/badge/Amazon%20Bedrock-Nova%20Lite%20AI-005276?logo=amazon-aws&logoColor=white" alt="Amazon Bedrock" /></a>
+  <a href="https://aws.amazon.com/lambda/"><img src="https://img.shields.io/badge/AWS%20Lambda-Python%203.12-FF9900?logo=aws-lambda&logoColor=white" alt="AWS Lambda" /></a>
+  <a href="https://aws.amazon.com/api-gateway/"><img src="https://img.shields.io/badge/API%20Gateway-HTTP%20API%20v2-FF4F8B?logo=amazon-aws&logoColor=white" alt="API Gateway" /></a>
+  <a href="https://aws.amazon.com/serverless/sam/"><img src="https://img.shields.io/badge/AWS%20SAM-Serverless%20IaC-CC2264?logo=amazon-aws&logoColor=white" alt="AWS SAM" /></a>
+  <a href="https://registry.opendata.aws/sentinel-2/"><img src="https://img.shields.io/badge/AWS%20Open%20Data-Sentinel--2%20COGs-527FFF?logo=amazon-aws&logoColor=white" alt="Sentinel-2 COGs" /></a>
+</p>
+
+<p align="center">
+  <a href="https://react.dev"><img src="https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=black" alt="React 19" /></a>
+  <a href="https://vitejs.dev/"><img src="https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white" alt="Vite" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS" /></a>
+  <a href="https://leafletjs.com/"><img src="https://img.shields.io/badge/Leaflet-Maps-199900?logo=leaflet&logoColor=white" alt="Leaflet" /></a>
+  <a href="https://recharts.org/"><img src="https://img.shields.io/badge/Recharts-Data%20Viz-22b5bf" alt="Recharts" /></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.12%20ETL-3776AB?logo=python&logoColor=white" alt="Python 3.12" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/Language-ಕನ್ನಡ%20%7C%20English-007ACC" alt="Bilingual" /></a>
+</p>
 
 > **AWS Environmental Hackathon Submission**  
 > **Team:** Sreeya Chand, Mithali Netizen, Prapti  
@@ -14,19 +30,56 @@
 
 ---
 
+<a id="about-jala-saakshi"></a>
+## 📌 About Jala Saakshi
+
+**Jala Saakshi (ಜಲ ಸಾಕ್ಷಿ · *"The Water’s Witness"*)** is an AI-powered, bilingual citizen science and environmental accountability platform designed to monitor, document, and protect Bengaluru's lakes and river networks.
+
+It tackles acute urban freshwater crises—including recurring mass fish kills, foaming, and untreated domestic and industrial sewage inflow—by connecting **8 years of KSPCB chemical water quality monitoring records**, **Sentinel-2 multispectral satellite imagery**, and **citizen observation on the ground**. Lakeside residents and walkers can capture photo evidence and report observations through **native Kannada voice dictation** (`kn-IN`) or English. Using **Amazon Bedrock (Nova Lite)**, the system performs multimodal incident classification and automatically drafts evidence-backed complaint letters for regulatory agencies (BBMP, KSPCB), feeding into an authority portal backed by a strict **7-day response clock**.
+
+<a id="tech-stack--technologies-used"></a>
+### 🏷️ Tech Stack & Tags
+
+| Layer / Category | Technologies & AWS Services |
+| :--- | :--- |
+| **AWS Cloud & Serverless** | `AWS Amplify Hosting` · `Amazon CloudFront` · `Amazon Bedrock (Nova Lite v1)` · `AWS Lambda (Python 3.12)` · `Amazon API Gateway (v2)` · `AWS SAM` · `Amazon CloudWatch` · `AWS Open Data Registry (Sentinel-2 COGs)` |
+| **Frontend & UI** | `React 19` · `TypeScript` · `Vite` · `Tailwind CSS v4` · `Lucide Icons` |
+| **Geospatial & Visualization** | `Leaflet` · `React-Leaflet` · `Leaflet.markercluster` · `Recharts` · `OpenStreetMap Overpass API` · `GeoJSON` |
+| **Backend, Data & Testing** | `Python 3.12` · `pdfplumber` (KSPCB PDF pipeline) · `Pytest` · `Web Speech API` (Kannada & Indian English STT) · `oxlint` |
+
+---
+
+<a id="table-of-contents"></a>
 ## 📑 Table of Contents
-1. [The Story: Why We Built Jala Saakshi](#-the-story-why-we-built-jala-saakshi)
-2. [The Problem Statement & Environmental Crisis](#-the-problem-statement--environmental-crisis)
-3. [Who It Is Built For: Two Distinct User Groups](#-who-it-is-built-for-two-distinct-user-groups)
-4. [Key Features & Visual Tour (Screenshots)](#-key-features--visual-tour)
-   - [Citizen Experience: Mobile App & Kannada Voice](#1-citizen-experience-mobile-app--kannada-voice)
-   - [Authority & Civic Bodies Experience: Web Portal & Dashboard](#2-authority--civic-bodies-experience-web-portal--dashboard)
-   - [Discovering Lakes Near You](#3-discovering-lakes-near-you-near-me)
-5. [The Data Provenance](#-the-data-provenance)
-6. [Architecture & System Design](#-architecture--system-design)
-7. [AWS Services Implementation (Judging Criteria)](#-aws-services-implementation-judging-criteria)
-8. [Quick Start & Local Development](#-quick-start--local-development)
-9. [Project Team & Attributions](#-project-team--attributions)
+
+- [📌 About Jala Saakshi](#-about-jala-saakshi)
+  - [🏷️ Tech Stack & Tags](#️-tech-stack--tags)
+- [🌊 The Story: Why We Built Jala Saakshi](#-the-story-why-we-built-jala-saakshi)
+  - [The Breaking Point: Doddagubbi Lake](#the-breaking-point-doddagubbi-lake)
+- [🚨 The Problem Statement & Environmental Crisis](#-the-problem-statement--environmental-crisis)
+  - [The Core Problem Statement](#the-core-problem-statement)
+  - [The Ecological Impact](#the-ecological-impact-general-background-not-specific-to-any-one-lake)
+- [👥 Who It Is Built For: Two Distinct User Groups](#-who-it-is-built-for-two-distinct-user-groups)
+- [📸 Key Features & Visual Tour](#-key-features--visual-tour)
+  - [1. Citizen Experience: Mobile App & Kannada Voice](#1-citizen-experience-mobile-app--kannada-voice)
+    - [🎙️ How Voice Input Works](#️-how-voice-input-works)
+  - [2. Authority & Civic Bodies Experience: Web Portal & Dashboard](#2-authority--civic-bodies-experience-web-portal--dashboard)
+    - [🏢 Authority Triage Portal (`#/authority`)](#-authority-triage-portal-authority-prototype)
+    - [🗺️ Geospatial Water Quality Dashboard (`#/dashboard`)](#️-geospatial-water-quality-dashboard-dashboard)
+  - [3. Discovering Lakes Near You (`#/near-me`)](#3-discovering-lakes-near-you-near-me)
+- [📊 The Data Provenance](#-the-data-provenance)
+- [🏗️ Architecture & System Design](#️-architecture--system-design)
+- [☁️ AWS Services Implementation (Judging Criteria)](#️-aws-services-implementation-judging-criteria)
+- [💻 Quick Start & Local Development](#-quick-start--local-development)
+  - [Prerequisites](#prerequisites)
+  - [1. Clone & Install Dependencies](#1-clone--install-dependencies)
+  - [2. Run the Frontend](#2-run-the-frontend)
+  - [3. Run the AI Backend (Zero AWS Cost)](#3-run-the-ai-backend-zero-aws-cost)
+  - [4. Run Unit Tests](#4-run-unit-tests)
+  - [5. Production AWS SAM Deployment](#5-production-aws-sam-deployment)
+  - [6. Repository Layout](#6-repository-layout)
+- [👩‍💻 Project Team & Attributions](#-project-team--attributions)
+  - [Official Data Citations](#official-data-citations)
 
 ---
 
