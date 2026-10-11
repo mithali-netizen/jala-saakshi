@@ -11,34 +11,6 @@ import type { SpeechRecognitionCtor, SpeechRecognitionLike } from '../types/spee
  * otherwise.
  */
 
-export const VOICE_LANGS = [
-  { code: 'kn-IN', label: 'ಕನ್ನಡ' },
-  { code: 'en-IN', label: 'English' },
-] as const;
-
-export type VoiceLang = (typeof VOICE_LANGS)[number]['code'];
-
-const LANG_KEY = 'jala-voice-lang';
-export const DEFAULT_LANG: VoiceLang = 'kn-IN';
-
-export function loadVoiceLang(): VoiceLang {
-  try {
-    const saved = localStorage.getItem(LANG_KEY);
-    if (VOICE_LANGS.some((l) => l.code === saved)) return saved as VoiceLang;
-  } catch {
-    /* storage unavailable: fall through to the default */
-  }
-  return DEFAULT_LANG;
-}
-
-function saveVoiceLang(lang: VoiceLang): void {
-  try {
-    localStorage.setItem(LANG_KEY, lang);
-  } catch {
-    /* the choice just will not persist */
-  }
-}
-
 /** Undefined when the browser has no speech recognition at all. */
 function getRecognitionCtor(): SpeechRecognitionCtor | undefined {
   if (typeof window === 'undefined') return undefined;
@@ -71,32 +43,25 @@ export interface VoiceInput {
   /** Words recognised so far in this run, not yet committed. */
   interim: string;
   error: string | null;
-  lang: VoiceLang;
-  setLang: (lang: VoiceLang) => void;
   start: () => void;
   stop: () => void;
 }
 
 /**
+ * @param lang BCP-47 locale for recognition, e.g. 'kn-IN'. Driven by the app language.
  * @param onTranscript appends a finished phrase. Called as each phrase is finalised so a
  *   long description is not lost if recognition ends early.
  */
-export function useVoiceInput(onTranscript: (text: string) => void): VoiceInput {
+export function useVoiceInput(lang: string, onTranscript: (text: string) => void): VoiceInput {
   const Ctor = useMemo(getRecognitionCtor, []);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [lang, setLangState] = useState<VoiceLang>(loadVoiceLang);
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   // Keep the newest callback without restarting recognition.
   const live = useRef({ onTranscript });
   live.current = { onTranscript };
-
-  const setLang = useCallback((next: VoiceLang) => {
-    setLangState(next);
-    saveVoiceLang(next);
-  }, []);
 
   const stop = useCallback(() => {
     recognitionRef.current?.stop();
@@ -155,5 +120,5 @@ export function useVoiceInput(onTranscript: (text: string) => void): VoiceInput 
 
   useEffect(() => () => recognitionRef.current?.abort(), []);
 
-  return { supported: !!Ctor, listening, interim, error, lang, setLang, start, stop };
+  return { supported: !!Ctor, listening, interim, error, start, stop };
 }

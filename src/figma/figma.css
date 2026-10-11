@@ -334,3 +334,13 @@ textarea, select { width: 100%; padding: .75rem; resize: vertical; color: var(--
 .loc-tag { padding: .14rem .4rem; border-radius: .35rem; font-size: .6rem; font-weight: 700; letter-spacing: .02em; }
 .loc-tag.approx { color: #b45309; background: #fffbeb; border: 1px solid #fde68a; }
 .loc-tag.exact { color: var(--color-brand-dark); background: var(--color-brand-soft); border: 1px solid #99f6e4; }
+
+/* Language switch, present in every citizen-app header. */
+.lang-toggle { display: inline-flex; padding: .12rem; gap: .1rem; background: rgba(148,163,184,.18); border-radius: .5rem; }
+.lang-toggle button { padding: .2rem .5rem; border: 0; border-radius: .38rem; background: transparent; color: inherit; opacity: .65; font-size: .66rem; font-weight: 650; white-space: nowrap; }
+.lang-toggle button.selected { background: #fff; color: var(--color-brand-dark); opacity: 1; box-shadow: 0 1px 3px rgba(15,23,42,.14); }
+.home-top .lang-toggle { background: rgba(255,255,255,.16); }
+.home-top .lang-toggle button { color: #fff; }
+.home-top .lang-toggle button.selected { color: var(--color-brand-dark); }
+.map-header .lang-toggle { background: #fff; box-shadow: 0 6px 20px rgba(15,23,42,.12); }
+.header-action { min-width: auto; }

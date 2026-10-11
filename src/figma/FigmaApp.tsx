@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import "./figma.css";
 import { APP_NAME, DEMO_CASE_PREFIX } from "../brand";
-import { DEMO_WATCHED_LAKES, DEMO_WATCHLIST_RISK, WATCHED_LAKES_LABEL } from "../demo/watchlist";
+import { DEMO_WATCHED_LAKES, DEMO_WATCHLIST_RISK } from "../demo/watchlist";
 import { useData } from "../context/DataContext";
 import { AUTHORITIES, addReport, readPhoto, useReports, type CitizenReport } from "../services/reportStore";
 import { complaintMailto } from "../services/complaint";
 import { daysSince, formatDay, todayISO } from "../utils/dates";
 import type { Lake } from "../services/lakes";
-import { useVoiceInput, VOICE_LANGS } from "../services/voiceInput";
+import { useVoiceInput } from "../services/voiceInput";
+import { useLanguage } from "../i18n/useLanguage";
+import { LANGS, SPEECH_LOCALE } from "../i18n/strings";
 import { useGeotag, nearestLake, type LocationSource } from "../services/geotag";
 import { MiniMap } from "../components/Map/MiniMap";
 import { DEMO_LAKE_NAMES, SEEDED_CASES, seededAcknowledged, seededHighRisk } from "../demo/seededCases";
@@ -33,7 +35,8 @@ export const emptyDraft = (): Draft => ({
 
 /** Shown wherever a report is created or listed. There is no server behind any of it. */
 function PrototypeNote({ children }: { children?: ReactNode }) {
-  return <div className="proto-note"><Icon name="shield" /><p>{children ?? <><strong>Prototype.</strong> Reports are saved in this browser only. Nothing is sent to any authority until you send it yourself.</>}</p></div>;
+  const { t } = useLanguage();
+  return <div className="proto-note"><Icon name="shield" /><p>{children ?? <><strong>{t("prototype")}</strong> {t("prototypeNote")}</>}</p></div>;
 }
 
 type Screen =
@@ -132,26 +135,35 @@ function Logo({ compact = false }: { compact?: boolean }) {
   return <div className="logo-wrap"><span className="logo-mark"><Icon name="water" className="size-5" /></span>{!compact && <span className="logo-text">{APP_NAME}</span>}</div>;
 }
 
+function LangToggle() {
+  const { lang, setLang } = useLanguage();
+  return <div className="lang-toggle" role="group" aria-label="Language / ಭಾಷೆ">
+    {LANGS.map((l) => <button key={l.code} type="button" aria-pressed={lang === l.code}
+      className={lang === l.code ? "selected" : ""} onClick={() => setLang(l.code)}>{l.label}</button>)}
+  </div>;
+}
+
 function MobileHeader({ title, onBack, action }: { title?: string; onBack?: () => void; action?: ReactNode }) {
   return <header className="mobile-header">
     {onBack ? <button className="icon-btn" onClick={onBack} aria-label="Go back"><Icon name="chevron" /></button> : <Logo />}
     {title && <div className="header-title">{title}</div>}
-    <div className="header-action">{action}</div>
+    <div className="header-action">{action ?? <LangToggle />}</div>
   </header>;
 }
 
-const navItems: { screen: Screen; label: string; icon: IconName }[] = [
-  { screen: "home", label: "Home", icon: "home" },
-  { screen: "map", label: "Map", icon: "map" },
-  { screen: "report", label: "Report", icon: "plus" },
-  { screen: "home", label: "Alerts", icon: "bell" },
-  { screen: "tracking", label: "My Reports", icon: "file" },
+const navItems: { screen: Screen; key: "navHome" | "navMap" | "navReport" | "navAlerts" | "navMyReports"; icon: IconName }[] = [
+  { screen: "home", key: "navHome", icon: "home" },
+  { screen: "map", key: "navMap", icon: "map" },
+  { screen: "report", key: "navReport", icon: "plus" },
+  { screen: "home", key: "navAlerts", icon: "bell" },
+  { screen: "tracking", key: "navMyReports", icon: "file" },
 ];
 
 function BottomNav({ active, navigate }: { active: Screen; navigate: (screen: Screen) => void }) {
+  const { t } = useLanguage();
   return <nav className="bottom-nav" aria-label="Primary navigation">{navItems.map((item, index) =>
-    <button key={`${item.label}-${index}`} type="button" className={`nav-item ${active === item.screen ? "active" : ""} ${item.screen === "report" ? "report-nav" : ""}`} onClick={() => navigate(item.screen)}>
-      <span className="nav-icon"><Icon name={item.icon} /></span><span>{item.label}</span>
+    <button key={`${item.key}-${index}`} type="button" className={`nav-item ${active === item.screen ? "active" : ""} ${item.screen === "report" ? "report-nav" : ""}`} onClick={() => navigate(item.screen)}>
+      <span className="nav-icon"><Icon name={item.icon} /></span><span>{t(item.key)}</span>
     </button>
   )}</nav>;
 }
@@ -165,55 +177,57 @@ function SectionTitle({ children, action }: { children: ReactNode; action?: Reac
 }
 
 function HomeScreen({ navigate }: { navigate: (screen: Screen) => void }) {
+  const { t } = useLanguage();
   return <MobileFrame active="home" navigate={navigate}>
     <div className="home-top">
-      <MobileHeader action={<button className="avatar" onClick={() => navigate("authority")} aria-label="Open authority dashboard">AK</button>} />
-      <div className="greeting"><p>{new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 17 ? "Good afternoon" : "Good evening"}</p><h1>How are our lakes today?</h1></div>
+      <MobileHeader action={<LangToggle />} />
+      <div className="greeting"><p>{new Date().getHours() < 12 ? t("greetingMorning") : new Date().getHours() < 17 ? t("greetingAfternoon") : t("greetingEvening")}</p><h1>{t("homeTitle")}</h1></div>
     </div>
     <div className="screen-body overlap">
       <Card className="health-card">
-        <div><p className="eyebrow light">Bengaluru lake health</p><div className="big-stat">{DEMO_WATCHED_LAKES} <span>{WATCHED_LAKES_LABEL}</span></div></div>
-        <div className="health-dots"><span className="dot high" />{DEMO_WATCHLIST_RISK.high} High <span className="dot elevated" />{DEMO_WATCHLIST_RISK.elevated} Elevated <span className="dot low" />{DEMO_WATCHLIST_RISK.low} Low</div>
-        <p className="coverage-note">No lake appears in KSPCB's <strong>monthly river reports</strong>. This watchlist is our own.</p>
+        <div><p className="eyebrow light">{t("lakeHealth")}</p><div className="big-stat">{DEMO_WATCHED_LAKES} <span>{t("watchedLakes")}</span></div></div>
+        <div className="health-dots"><span className="dot high" />{DEMO_WATCHLIST_RISK.high} {t("high")} <span className="dot elevated" />{DEMO_WATCHLIST_RISK.elevated} {t("elevated")} <span className="dot low" />{DEMO_WATCHLIST_RISK.low} {t("low")}</div>
+        <p className="coverage-note">{t("coverageNote")}</p>
         <DemoTag />
       </Card>
-      <SectionTitle action={<button className="text-button" onClick={() => navigate("map")}>View map <Icon name="arrow" className="size-4" /></button>}>Lake needing attention</SectionTitle>
+      <SectionTitle action={<button className="text-button" onClick={() => navigate("map")}>{t("viewMap")} <Icon name="arrow" className="size-4" /></button>}>{t("lakeNeedingAttention")}</SectionTitle>
       <Card className="featured-card" onClick={() => navigate("lake")}>
         <div className="lake-photo"><img src={LAKE_IMAGE} alt="Stock photograph of a lake, used as a placeholder" /><div className="photo-overlay"><DemoTag /></div></div>
-        <div className="featured-content"><div><h2>{DEMO_LAKE_NAMES.east}</h2><p>Example of how a flagged lake would appear</p></div><Icon name="arrow" /></div>
-        <div className="source-line"><Icon name="shield" className="size-4" /> Seeded example · not a real observation</div>
+        <div className="featured-content"><div><h2>{DEMO_LAKE_NAMES.east}</h2><p>{t("flaggedExample")}</p></div><Icon name="arrow" /></div>
+        <div className="source-line"><Icon name="shield" className="size-4" /> {t("seededNotReal")}</div>
       </Card>
-      <SectionTitle>Nearby alerts</SectionTitle>
+      <SectionTitle>{t("nearbyAlerts")}</SectionTitle>
       <div className="alert-list">
-        <Card className="alert-row" onClick={() => navigate("lake")}><span className="alert-icon elevated"><Icon name="water" /></span><div><h3>{DEMO_LAKE_NAMES.north}</h3><p>Example alert</p></div><span className="time">Demo</span></Card>
-        <Card className="alert-row"><span className="alert-icon low"><Icon name="rain" /></span><div><h3>{DEMO_LAKE_NAMES.south}</h3><p>Example alert</p></div><span className="time">Demo</span></Card>
+        <Card className="alert-row" onClick={() => navigate("lake")}><span className="alert-icon elevated"><Icon name="water" /></span><div><h3>{DEMO_LAKE_NAMES.north}</h3><p>{t("exampleAlert")}</p></div><span className="time">Demo</span></Card>
+        <Card className="alert-row"><span className="alert-icon low"><Icon name="rain" /></span><div><h3>{DEMO_LAKE_NAMES.south}</h3><p>{t("exampleAlert")}</p></div><span className="time">Demo</span></Card>
       </div>
-      <Button className="full sticky-cta" icon="camera" onClick={() => navigate("report")}>Report pollution</Button>
+      <Button className="full sticky-cta" icon="camera" onClick={() => navigate("report")}>{t("reportPollution")}</Button>
     </div>
   </MobileFrame>;
 }
 
 function MapScreen({ navigate }: { navigate: (screen: Screen) => void }) {
   const { lakes } = useData();
+  const { t } = useLanguage();
   const reports = useReports();
   const [picked, setPicked] = useState<Lake | null>(null);
 
   return <MobileFrame active="map" navigate={navigate}>
     <div className="map-screen">
-      <div className="map-header"><Logo /></div>
+      <div className="map-header"><Logo /><LangToggle /></div>
       <div className="map-area"><MiniMap className="mm-fill" onSelectLake={setPicked} /></div>
       <div className="map-sheet">
         <div className="sheet-handle" />
         {picked ? <>
-          <div className="sheet-title"><div><div className="eyebrow">Selected lake</div><h1>{picked.name}</h1></div><Badge tone="neutral">No reading</Badge></div>
-          <p className="muted">No dissolved oxygen, BOD or coliform figure for this lake in KSPCB&rsquo;s monthly river reports.</p>
+          <div className="sheet-title"><div><div className="eyebrow">{t("selectedLake")}</div><h1>{picked.name}</h1></div><Badge tone="neutral">{t("noReading")}</Badge></div>
+          <p className="muted">{t("noReadingLong")}</p>
           <Button className="full" onClick={() => { window.location.hash = `#/app/report?lake=${encodeURIComponent(picked.id)}`; }}>
-            Report a problem here <Icon name="arrow" />
+            {t("reportHere")} <Icon name="arrow" />
           </Button>
         </> : <>
-          <div className="sheet-title"><div><div className="eyebrow">Bengaluru lakes</div><h1>{lakes ? `${lakes.length} mapped` : "Loading…"}</h1></div></div>
-          <p className="muted">Tap a lake to see what is known about it. {reports.length > 0 ? `Your ${reports.length} report${reports.length === 1 ? "" : "s"} are pinned here too.` : "Reports you make appear here as pins."}</p>
-          <div className="source-line"><Icon name="map" className="size-4" /> Lake shapes © OpenStreetMap contributors</div>
+          <div className="sheet-title"><div><div className="eyebrow">{t("bengaluruLakes")}</div><h1>{lakes ? `${lakes.length} ${t("mapped")}` : t("loading")}</h1></div></div>
+          <p className="muted">{t("tapALake")} {reports.length > 0 ? t("yourReportsPinned") : t("reportsWillAppear")}</p>
+          <div className="source-line"><Icon name="map" className="size-4" /> {t("lakeShapesCredit")}</div>
         </>}
       </div>
     </div>
@@ -258,6 +272,7 @@ const issues = ["Dead fish", "Froth", "Sewage inflow", "Algae", "Foul smell", "F
 
 function LakePicker({ value, onPick }: { value: Lake | null; onPick: (l: Lake) => void }) {
   const { lakes } = useData();
+  const { t } = useLanguage();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
 
@@ -265,7 +280,7 @@ function LakePicker({ value, onPick }: { value: Lake | null; onPick: (l: Lake) =
     .filter((l) => l.name.toLowerCase().includes(query.trim().toLowerCase()))
     .slice(0, 8);
 
-  if (!lakes) return <div className="field compact">Loading lakes…</div>;
+  if (!lakes) return <div className="field compact">{t("loading")}</div>;
 
   return <div className="lake-picker">
     <div className="field">
@@ -273,17 +288,17 @@ function LakePicker({ value, onPick }: { value: Lake | null; onPick: (l: Lake) =
       <input
         type="text"
         value={open ? query : (value?.name ?? query)}
-        placeholder={`Search ${lakes.length} Bengaluru lakes`}
+        placeholder={`${t("searchLakes")} (${lakes.length})`}
         onFocus={() => { setOpen(true); setQuery(""); }}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
-        aria-label="Choose a lake"
+        aria-label={t("lake")}
       />
     </div>
     {open && <ul className="lake-options">
-      {matches.length === 0 && <li className="empty">No lake matches “{query}”</li>}
+      {matches.length === 0 && <li className="empty">{t("noLakeMatches")} “{query}”</li>}
       {matches.map((l) => <li key={l.id}>
         <button type="button" onClick={() => { onPick(l); setOpen(false); setQuery(""); }}>
-          {l.name}<small>no reading in KSPCB&rsquo;s monthly river reports</small>
+          {l.name}<small>{t("noReading")}</small>
         </button>
       </li>)}
     </ul>}
@@ -292,6 +307,7 @@ function LakePicker({ value, onPick }: { value: Lake | null; onPick: (l: Lake) =
 
 function ReportScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen) => void; draft: Draft; setDraft: (d: Draft) => void }) {
   const { lakes } = useData();
+  const { t, issue: issueLabel, lang } = useLanguage();
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const geo = useGeotag();
@@ -301,7 +317,7 @@ function ReportScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen
   const liveDraft = useRef(draft);
   liveDraft.current = draft;
 
-  const voice = useVoiceInput((phrase) => {
+  const voice = useVoiceInput(SPEECH_LOCALE[lang], (phrase) => {
     if (!phrase) return;
     const current = liveDraft.current.note.trim();
     setDraft({ ...liveDraft.current, note: current ? `${current} ${phrase}` : phrase });
@@ -352,88 +368,86 @@ function ReportScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen
   const ready = !!draft.lake && draft.issues.length > 0;
 
   return <MobileFrame active="report" navigate={navigate}>
-    <MobileHeader title="Report a problem" onBack={() => navigate("home")} />
+    <MobileHeader title={t("reportTitle")} onBack={() => navigate("home")} />
     <div className="screen-body form-screen">
-      <div className="intro-copy"><h1>What did you notice?</h1><p>Your report is saved in this browser and used to draft a complaint you send yourself.</p></div>
+      <div className="intro-copy"><h1>{t("whatDidYouNotice")}</h1><p>{t("reportIntro")}</p></div>
 
       <label className="photo-upload" htmlFor="report-photo">
         {draft.photo
           ? <img className="photo-preview" src={draft.photo} alt="The photo you attached" />
-          : <><span><Icon name="camera" className="size-7" /></span><strong>{busy ? "Reading photo…" : "Add a photo"}</strong><small>Camera on a phone, file picker on a computer</small></>}
+          : <><span><Icon name="camera" className="size-7" /></span><strong>{busy ? t("readingPhoto") : t("addPhoto")}</strong><small>{t("photoHint")}</small></>}
       </label>
       <input id="report-photo" className="visually-hidden" type="file" accept="image/*" capture="environment" onChange={onPhoto} />
-      {draft.photo && <button type="button" className="text-button" onClick={() => setDraft({ ...draft, photo: null })}>Remove photo</button>}
+      {draft.photo && <button type="button" className="text-button" onClick={() => setDraft({ ...draft, photo: null })}>{t("removePhoto")}</button>}
       {photoError && <p className="field-error">{photoError}</p>}
 
-      <div className="field-group"><label>Lake</label><LakePicker value={draft.lake} onPick={(l) => setDraft({ ...draft, lake: l })} /></div>
+      <div className="field-group"><label>{t("lake")}</label><LakePicker value={draft.lake} onPick={(l) => setDraft({ ...draft, lake: l })} /></div>
 
       <div className="field-group">
         <div className="label-row">
-          <label htmlFor="coord-lat">Location</label>
+          <label htmlFor="coord-lat">{t("location")}</label>
           {approximate
-            ? <span className="loc-tag approx">Approximate</span>
-            : <span className="loc-tag exact">{draft.accuracyM != null ? `± ${Math.round(draft.accuracyM)} m` : "Edited"}</span>}
+            ? <span className="loc-tag approx">{t("approximate")}</span>
+            : <span className="loc-tag exact">{draft.accuracyM != null ? `± ${Math.round(draft.accuracyM)} m` : t("edited")}</span>}
         </div>
         {geo.status === "locating"
-          ? <div className="field compact">Finding your location…</div>
+          ? <div className="field compact">{t("findingLocation")}</div>
           : <div className="coord-row">
               <input id="coord-lat" className="field compact" type="number" step="0.00001" inputMode="decimal"
-                value={effLat ?? ""} onChange={editCoord("lat")} aria-label="Latitude" placeholder="Latitude" />
+                value={effLat ?? ""} onChange={editCoord("lat")} aria-label={t("latitude")} placeholder={t("latitude")} />
               <input className="field compact" type="number" step="0.00001" inputMode="decimal"
-                value={effLng ?? ""} onChange={editCoord("lng")} aria-label="Longitude" placeholder="Longitude" />
+                value={effLng ?? ""} onChange={editCoord("lng")} aria-label={t("longitude")} placeholder={t("longitude")} />
             </div>}
         <p className="field-hint">
           {geo.note ?? (approximate
-            ? "Taken from the lake you picked, not from your device."
-            : "From your device. Correct it if it is wrong.")}
+            ? t("locFromLake")
+            : t("locFromDevice"))}
         </p>
       </div>
 
       <div className="field-group">
-        <label>What did you see? <span>Choose all that apply</span></label>
-        <div className="issue-grid">{issues.map((issue) => <button type="button" key={issue} className={draft.issues.includes(issue) ? "selected" : ""} onClick={() => toggleIssue(issue)}>{issue}</button>)}</div>
+        <label>{t("whatDidYouSee")} <span>{t("chooseAll")}</span></label>
+        <div className="issue-grid">{issues.map((issue) => <button type="button" key={issue} className={draft.issues.includes(issue) ? "selected" : ""} onClick={() => toggleIssue(issue)}>{issueLabel(issue)}</button>)}</div>
       </div>
 
       <div className="field-group">
-        <label htmlFor="report-date">Date observed</label>
+        <label htmlFor="report-date">{t("dateObserved")}</label>
         <input id="report-date" className="field compact" type="date" value={draft.date} max={todayISO()} onChange={(e) => setDraft({ ...draft, date: e.target.value })} />
       </div>
 
       <div className="field-group">
         <div className="label-row">
-          <label htmlFor="description">Description <span>Optional</span></label>
-          {voice.supported && <div className="voice-langs" role="group" aria-label="Voice input language">
-            {VOICE_LANGS.map((l) => <button key={l.code} type="button" aria-pressed={voice.lang === l.code}
-              className={voice.lang === l.code ? "selected" : ""} onClick={() => voice.setLang(l.code)}>{l.label}</button>)}
-          </div>}
+          <label htmlFor="description">{t("description")} <span>{t("optional")}</span></label>
+
         </div>
         <div className="desc-wrap">
-          <textarea id="description" placeholder="Add a short note about what you saw" rows={3}
+          <textarea id="description" placeholder={t("descPlaceholder")} rows={3}
             value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} />
           {voice.supported && <button type="button"
             className={`mic-btn ${voice.listening ? "listening" : ""}`}
             aria-pressed={voice.listening}
-            aria-label={voice.listening ? "Stop voice input" : "Start voice input"}
+            aria-label={voice.listening ? t("stopVoice") : t("startVoice")}
             onClick={() => (voice.listening ? voice.stop() : voice.start())}>
             <Icon name="mic" />
           </button>}
         </div>
         {voice.listening && <p className="voice-live" aria-live="polite">
-          <span className="voice-dot" />Listening{voice.interim ? ": " : "…"}<em>{voice.interim}</em>
+          <span className="voice-dot" />{t("listening")}{voice.interim ? ": " : "…"}<em>{voice.interim}</em>
         </p>}
         {voice.error && <p className="field-error">{voice.error}</p>}
-        {voice.supported && <p className="field-hint">Voice input — browser speech recognition. It gets words wrong; read the text before you submit.</p>}
+        {voice.supported && <p className="field-hint">{t("voiceHint")}</p>}
       </div>
 
       <PrototypeNote />
       <Button className="full" onClick={() => ready && navigate("review")}>
-        {ready ? <>Review report <Icon name="arrow" /></> : "Choose a lake and what you saw"}
+        {ready ? <>{t("reviewReport")} <Icon name="arrow" /></> : t("chooseLakeFirst")}
       </Button>
     </div>
   </MobileFrame>;
 }
 
 function ReviewScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen) => void; draft: Draft; setDraft: (d: Draft) => void }) {
+  const { t, issue: issueLabel } = useLanguage();
   const [warning, setWarning] = useState<string | null>(null);
 
   const submit = () => {
@@ -456,30 +470,30 @@ function ReviewScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen
   };
 
   return <MobileFrame navigate={navigate}>
-    <MobileHeader title="Review report" onBack={() => navigate("report")} />
+    <MobileHeader title={t("reviewTitle")} onBack={() => navigate("report")} />
     <div className="screen-body review-screen">
-      <div className="intro-copy"><h1>Check before you submit</h1><p>This is what will be saved and used to draft your complaint.</p></div>
+      <div className="intro-copy"><h1>{t("checkBeforeSubmit")}</h1><p>{t("reviewIntro")}</p></div>
 
       {draft.photo
-        ? <div className="evidence-photo"><img src={draft.photo} alt="The photo you attached" /><span className="image-label">YOUR PHOTO</span></div>
-        : <div className="evidence-photo empty"><p>No photo attached</p></div>}
+        ? <div className="evidence-photo"><img src={draft.photo} alt="The photo you attached" /><span className="image-label">{t("yourPhoto")}</span></div>
+        : <div className="evidence-photo empty"><p>{t("noPhotoAttached")}</p></div>}
 
       <Card className="review-summary">
         <dl>
-          <div><dt>Lake</dt><dd>{draft.lake?.name ?? "Not chosen"}</dd></div>
-          <div><dt>What you saw</dt><dd>{draft.issues.length ? draft.issues.join(", ") : "Not chosen"}</dd></div>
-          <div><dt>Date observed</dt><dd>{formatDay(draft.date)}</dd></div>
-          <div><dt>Location</dt><dd>{(draft.lat ?? draft.lake?.lat)?.toFixed(5)}, {(draft.lng ?? draft.lake?.lng)?.toFixed(5)}{draft.lat === null || draft.locationSource === "lake" ? " (approximate — from the lake)" : draft.accuracyM != null ? ` (± ${Math.round(draft.accuracyM)} m)` : " (edited)"}</dd></div>
-          {draft.note.trim() && <div><dt>Note</dt><dd>{draft.note.trim()}</dd></div>}
-          <div><dt>Will be addressed to</dt><dd>{AUTHORITIES.join(", ")}</dd></div>
+          <div><dt>{t("lake")}</dt><dd>{draft.lake?.name ?? t("notChosen")}</dd></div>
+          <div><dt>{t("whatYouSaw")}</dt><dd>{draft.issues.length ? draft.issues.map(issueLabel).join(", ") : t("notChosen")}</dd></div>
+          <div><dt>{t("dateObserved")}</dt><dd>{formatDay(draft.date)}</dd></div>
+          <div><dt>{t("location")}</dt><dd>{(draft.lat ?? draft.lake?.lat)?.toFixed(5)}, {(draft.lng ?? draft.lake?.lng)?.toFixed(5)}{draft.lat === null || draft.locationSource === "lake" ? " (approximate — from the lake)" : draft.accuracyM != null ? ` (± ${Math.round(draft.accuracyM)} m)` : " (edited)"}</dd></div>
+          {draft.note.trim() && <div><dt>{t("note")}</dt><dd>{draft.note.trim()}</dd></div>}
+          <div><dt>{t("addressedTo")}</dt><dd>{AUTHORITIES.join(", ")}</dd></div>
         </dl>
       </Card>
 
-      <div className="review-disclaimer"><Icon name="shield" /><div><strong>No automatic classification</strong><p>Reading the photo automatically is not connected in this prototype. What you selected is what gets recorded.</p></div></div>
+      <div className="review-disclaimer"><Icon name="shield" /><div><strong>{t("noAutoClassification")}</strong><p>{t("noAutoClassificationBody")}</p></div></div>
 
       {warning && <p className="field-error">{warning}</p>}
       <PrototypeNote />
-      <Button className="full" onClick={submit}>Save report</Button>
+      <Button className="full" onClick={submit}>{t("saveReport")}</Button>
     </div>
   </MobileFrame>;
 }
@@ -502,42 +516,44 @@ function StatusPill({ status }: { status: CitizenReport["status"] }) {
 
 function ReportCard({ report }: { report: CitizenReport }) {
   const { locations, stats } = useData();
+  const { t, issue: issueLabel } = useLanguage();
   const days = daysSince(report.date);
   return <Card className="report-summary">
     <div className="report-summary-top">
-      <div><div className="eyebrow">{report.id}</div><h1>{report.issues.join(", ") || "Report"}</h1></div>
+      <div><div className="eyebrow">{report.id}</div><h1>{report.issues.map(issueLabel).join(", ") || t("navReport")}</h1></div>
       <StatusPill status={report.status} />
     </div>
     <div className="report-meta">
       <span><Icon name="location" className="size-4" /> {report.lakeName}</span>
-      <span><Icon name="clock" className="size-4" /> {formatDay(report.date)} · {days} day{days === 1 ? "" : "s"} ago</span>
+      <span><Icon name="clock" className="size-4" /> {formatDay(report.date)} · {days} {days === 1 ? t("dayAgo") : t("daysAgo")}</span>
     </div>
     {report.note.trim() && <p className="report-note">{report.note.trim()}</p>}
-    {report.photo && <div className="evidence-strip"><img src={report.photo} alt={`Photo attached to ${report.id}`} /><div><strong>1 photo attached</strong><span>Stored in this browser</span></div></div>}
+    {report.photo && <div className="evidence-strip"><img src={report.photo} alt={`Photo attached to ${report.id}`} /><div><strong>{t("photoAttached")}</strong><span>{t("storedInBrowser")}</span></div></div>}
     <a className="btn btn-primary full" href={complaintMailto(report, locations, stats)}>
-      <Icon name="file" /> Open complaint in your email app
+      <Icon name="file" /> {t("openComplaint")}
     </a>
-    <p className="muted small">Addressed to {AUTHORITIES.join(", ")}. You review and send it; nothing is sent for you.</p>
+    <p className="muted small">{AUTHORITIES.join(", ")}. {t("complaintNote")}</p>
   </Card>;
 }
 
 function TrackingScreen({ navigate }: { navigate: (screen: Screen) => void }) {
   const reports = useReports();
+  const { t } = useLanguage();
   return <MobileFrame active="tracking" navigate={navigate}>
-    <MobileHeader title="My reports" onBack={() => navigate("home")} />
+    <MobileHeader title={t("myReports")} onBack={() => navigate("home")} />
     <div className="screen-body tracking-screen">
       {reports.length === 0
         ? <div className="empty-state">
             <span><Icon name="file" className="size-7" /></span>
-            <h2>No reports yet</h2>
-            <p>Reports you make are saved in this browser and listed here.</p>
-            <Button className="full" icon="camera" onClick={() => navigate("report")}>Report a problem</Button>
+            <h2>{t("noReportsYet")}</h2>
+            <p>{t("noReportsBody")}</p>
+            <Button className="full" icon="camera" onClick={() => navigate("report")}>{t("reportPollution")}</Button>
           </div>
         : <>
-            <div className="report-tabs"><button className="active">All <span>{reports.length}</span></button></div>
+            <div className="report-tabs"><button className="active">{t("all")} <span>{reports.length}</span></button></div>
             {reports.map((r) => <ReportCard key={r.id} report={r} />)}
-            <div className="ack-note"><Icon name="bell" /><p><strong>Acknowledged would not mean resolved.</strong> No status here is set by an authority — this prototype has no connection to one.</p></div>
-            <Button className="full" icon="camera" onClick={() => navigate("report")}>Report another problem</Button>
+            <div className="ack-note"><Icon name="bell" /><p><strong>{t("ackNoteTitle")}</strong> {t("ackNoteBody")}</p></div>
+            <Button className="full" icon="camera" onClick={() => navigate("report")}>{t("reportAnother")}</Button>
           </>}
       <PrototypeNote />
     </div>
