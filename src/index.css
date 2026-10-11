@@ -1,9 +1,11 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+﻿@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Noto+Sans+Kannada:wght@500;700&display=swap");
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
 
 @theme {
   --font-sans: "Inter", system-ui, sans-serif;
+  --font-display: "Sora", "Noto Sans Kannada", "Inter", system-ui, sans-serif;
   /* Shared with the mock-up's palette so the dashboard, story pages and app agree. */
   --color-brand: #0f766e;
   --color-brand-dark: #115e59;
@@ -219,3 +221,125 @@ html, body, #root {
 /* Station pins step back when the gap layer is the point of the view. */
 .dim-stations .stn-pin-wrap,
 .dim-stations .stn-cluster-wrap { opacity: 0.3; }
+
+/* ── Landing page motion ─────────────────────────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.reveal.in { opacity: 1; transform: none; }
+
+.lift {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 30px -12px rgba(15, 23, 42, 0.22);
+  border-color: rgba(15, 118, 110, 0.4);
+}
+
+.hero-surface::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60rem 28rem at 85% -10%, rgba(20, 184, 166, 0.22), transparent 60%),
+    radial-gradient(40rem 24rem at -5% 110%, rgba(244, 63, 94, 0.14), transparent 60%);
+  animation: hero-drift 14s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+@keyframes hero-drift { to { transform: translate3d(-2%, 2%, 0) scale(1.05); } }
+
+.app-surface { background: linear-gradient(180deg, #f0fdfa 0%, #f8fafc 100%); }
+
+.phone-shot { transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+.phone-wrap:hover .phone-shot { transform: translateY(-8px) rotate(-1.5deg); }
+
+.feature-cell { transition: background-color 0.3s ease; }
+.feature-cell:hover { background: rgba(255, 255, 255, 0.05); }
+
+.aws-card { transition: transform 0.3s ease, border-color 0.3s ease, background-color 0.3s ease; }
+.aws-card:hover { transform: translateY(-3px); border-color: rgba(252, 211, 77, 0.5); background: rgba(255, 255, 255, 0.06); }
+
+.nav-link { position: relative; }
+.nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0.75rem; right: 0.75rem; bottom: 0.15rem;
+  height: 2px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+.nav-link:hover::after { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .hero-surface::before { animation: none; }
+  .lift:hover, .aws-card:hover, .phone-wrap:hover .phone-shot { transform: none; }
+}
+
+/* ── Landing: bluish shading, backdrops, devices ─────────────────────────────── */
+.blue-wash {
+  background:
+    radial-gradient(60rem 40rem at 90% 8%, rgba(125, 180, 240, 0.35), transparent 60%),
+    radial-gradient(50rem 36rem at 5% 45%, rgba(147, 197, 253, 0.32), transparent 60%),
+    radial-gradient(60rem 40rem at 80% 85%, rgba(99, 160, 235, 0.28), transparent 60%),
+    linear-gradient(180deg, #e8f1fc 0%, #d9e8f9 50%, #e6f0fb 100%);
+}
+
+.hero-surface { background: linear-gradient(160deg, #06152b 0%, #0b2447 55%, #12376b 100%); }
+.hero-surface::before {
+  background:
+    radial-gradient(55rem 26rem at 85% -10%, rgba(56, 160, 255, 0.28), transparent 60%),
+    radial-gradient(40rem 24rem at -5% 110%, rgba(244, 63, 94, 0.14), transparent 60%);
+}
+.hero-fish {
+  opacity: 0.16;
+  mix-blend-mode: luminosity;
+  -webkit-mask-image: linear-gradient(100deg, transparent 5%, #000 55%, #000 100%), linear-gradient(180deg, #000 55%, transparent 92%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(100deg, transparent 5%, #000 55%, #000 100%), linear-gradient(180deg, #000 55%, transparent 92%);
+  mask-composite: intersect;
+}
+
+.fish-section { background: linear-gradient(180deg, #0b2447 0%, #0a1d3b 100%); }
+.fish-bg {
+  opacity: 0.12;
+  mix-blend-mode: luminosity;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 20%, #000 70%, transparent 95%);
+  mask-image: linear-gradient(180deg, transparent 0%, #000 20%, #000 70%, transparent 95%);
+}
+
+.app-surface { background: linear-gradient(180deg, rgba(186, 220, 252, 0.55) 0%, rgba(214, 233, 252, 0.3) 100%); }
+.aws-surface { background: linear-gradient(180deg, #0a1d3b 0%, #061226 100%); }
+
+.btn-lg { min-height: 3rem; padding: 0.75rem 1.4rem; font-size: 1rem; border-radius: 0.9rem; }
+.btn-light { background: #fff; color: #0b2447; }
+.btn-light:hover { background: #e0efff; }
+
+.feature-card {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s ease, border-color 0.3s ease;
+}
+.feature-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(59, 130, 246, 0.5);
+  box-shadow: 0 22px 40px -18px rgba(30, 80, 160, 0.35);
+}
+.notice-card { transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease; }
+.notice-card:hover { transform: translateY(-4px); background: rgba(255, 255, 255, 0.12); border-color: rgba(125, 190, 255, 0.5); }
+
+.device-float { transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+a:hover > .device-float, a:hover .device-float { transform: translateY(-8px); }
+
+.arch-frame { transition: transform 0.4s ease, box-shadow 0.4s ease; }
+.arch-frame:hover { transform: translateY(-4px); }
+
+.journey-step span { transition: transform 0.3s ease, background-color 0.3s ease, color 0.3s ease; }
+.journey-step:hover span { background: #2563eb; color: #fff; transform: scale(1.08); }
+
+@media (prefers-reduced-motion: reduce) {
+  .feature-card:hover, .notice-card:hover, .arch-frame:hover, a:hover .device-float { transform: none; }
+}

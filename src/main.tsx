@@ -8,16 +8,19 @@ import { storyRouteFromHash } from './story/StoryApp.tsx'
 // Loaded lazily so the Figma mock-up CSS only applies on #/app and #/authority routes.
 const FigmaApp = lazy(() => import('./figma/FigmaApp.tsx'))
 const StoryApp = lazy(() => import('./story/StoryApp.tsx'))
+const Landing = lazy(() => import('./landing/Landing.tsx'))
 
-type Surface = 'dashboard' | 'story' | 'mockup'
+type Surface = 'landing' | 'dashboard' | 'story' | 'mockup'
 
 /** The mock-up ships a global stylesheet, so it stays quarantined on its own routes. */
 const isMockupRoute = (hash: string) => hash.startsWith('#/app') || hash.startsWith('#/authority')
 
 function surfaceFromHash(hash: string): Surface {
   if (isMockupRoute(hash)) return 'mockup'
-  if (hash.startsWith('#/story')) return 'story'
-  return 'dashboard'
+  if (hash.startsWith('#/dashboard')) return 'dashboard'
+  // The gap page was promoted to the landing page: `#/story` alone is the landing too.
+  if (hash.startsWith('#/story/')) return 'story'
+  return 'landing'
 }
 
 function Root() {
@@ -44,6 +47,7 @@ function Root() {
         {surface === 'mockup' && <FigmaApp />}
         {surface === 'story' && <StoryApp route={storyRouteFromHash(hash)} />}
         {surface === 'dashboard' && <App />}
+        {surface === 'landing' && <Landing />}
       </Suspense>
     </DataProvider>
   )

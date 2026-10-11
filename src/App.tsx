@@ -71,7 +71,7 @@ export const App: React.FC = () => {
     <div className="flex min-h-screen flex-col bg-slate-100 font-sans text-slate-800">
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white">
         <div className="shell shell-wide flex flex-wrap items-center gap-x-5 gap-y-2 py-3">
-          <div className="flex items-center gap-2.5">
+          <a href="#/" className="flex items-center gap-2.5 no-underline" aria-label={`${APP_NAME} home`}>
             <span className="flex h-8 w-8 items-center justify-center rounded-[0.6rem_0.6rem_0.6rem_0.15rem] bg-teal-700 text-white">
               <Droplet className="h-[18px] w-[18px]" aria-hidden />
             </span>
@@ -79,7 +79,7 @@ export const App: React.FC = () => {
               <h1 className="text-base font-bold tracking-tight text-slate-900">{APP_NAME}</h1>
               <p className="text-[11px] text-slate-500">{APP_TAGLINE}</p>
             </div>
-          </div>
+          </a>
 
           {months.length > 0 && (
             <div className="order-last w-full border-t border-slate-100 pt-2 lg:order-none lg:w-auto lg:border-0 lg:pt-0">
