@@ -191,8 +191,9 @@ Citizens can grant browser geolocation (it starts from central Bengaluru if they
 4. Says how many mapped lakes have no reading at all.
 
 <div align="center">
-  <img src="docs/screenshots/web-near-me.png" width="800" alt="Near me: the guided tour of lakes within 3 km" />
-  <p><em>The near-me tour: a seven-step walk through the lakes around you and what the Board recorded.</em></p>
+
+  <img src="https://github.com/user-attachments/assets/2137c44e-ec31-4a90-a3d6-479150247300" width="800" alt="Near me: the guided tour of lakes within 3 km" />
+  <p><em>Step 3 of the near-me tour: a seven-step walk through the lakes around you and what the Board recorded.</em></p>
 </div>
 
 ---
@@ -281,7 +282,7 @@ Every AWS service is thoughtfully chosen to adhere to the AWS Well-Architected F
 | :--- | :--- | :---: | :--- |
 | **AWS Amplify Hosting** | CI/CD & Static Delivery | `DEPLOYED` | Connects directly to Git `main`. Builds the Vite React SPA and automates SSL certificates, custom branch previews, and edge cache invalidation. |
 | **Amazon CloudFront** | Content Delivery Network | `DEPLOYED` | Fronts Amplify Hosting to serve static JavaScript bundles, CSS, and multi-megabyte GeoJSON datasets across edge locations with sub-50ms latency in India. |
-| **Amazon Bedrock** | Generative AI & Vision | `DESIGNED` | Utilizes **Amazon Nova Lite (`us.amazon.nova-lite-v1:0`)**: <br/>1. **Multimodal classification (`POST /analyze-photo`):** Detects surface froth, sewage outfalls, algal blooms, or fish mortality with severity scores (1–5).<br/>2. **Formal letter generation (`POST /draft-complaint`):** Synthesizes citizen observations with historical chemical readings to draft formal complaints in English, Kannada, and Hindi. |
+| **Amazon Bedrock** | Generative AI & Vision | `DEPLOYED` | Utilizes **Amazon Nova Lite (`us.amazon.nova-lite-v1:0`)**: <br/>1. **Multimodal classification (`POST /analyze-photo`):** Detects surface froth, sewage outfalls, algal blooms, or fish mortality with severity scores (1–5).<br/>2. **Formal letter generation (`POST /draft-complaint`):** Synthesizes citizen observations with historical chemical readings to draft formal complaints in English, Kannada, and Hindi. |
 | **AWS Lambda** | Serverless Compute | `DESIGNED` | Runs Python 3.12 handlers behind API Gateway. Completely decouples AI inferencing from client-side code so zero AWS credentials reach the browser. |
 | **Amazon API Gateway** | Managed REST Interface | `DESIGNED` | HTTP API (v2) configured with strict CORS whitelist for the Amplify domain, payload size limits (rejects > 4MB), and throttling (5 requests/sec, burst 10) to eliminate DDoS risks. |
 | **Static data files** | Dataset delivery | `DEPLOYED` | No S3 bucket is used or declared today. The datasets (`readings.json`, `lakes-2026-07.json`, GeoJSON, satellite frames) are files in the repo, served through Amplify and CloudFront. `VITE_DATA_URL` lets the app read readings from elsewhere, such as a bucket, later. |
