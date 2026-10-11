@@ -9,7 +9,7 @@
 
 > **AWS Environmental Hackathon Submission**  
 > **Team:** Sreeya Chand, Mithali Netizen, Prapti  
-> **Live Demo:** [Hosted on AWS Amplify & CloudFront](#)  
+> **Live Demo:** deployed with AWS Amplify and CloudFront (URL to be added)  
 > *"How do people see what's happening to the water around them, and hold someone to it?"*
 
 ---
@@ -21,7 +21,7 @@
 4. [Key Features & Visual Tour (Screenshots)](#-key-features--visual-tour)
    - [Citizen Experience: Mobile App & Kannada Voice](#1-citizen-experience-mobile-app--kannada-voice)
    - [Authority & Civic Bodies Experience: Web Portal & Dashboard](#2-authority--civic-bodies-experience-web-portal--dashboard)
-   - [Discovering Lakes Near You](#3-discovering-lakes-near-you)
+   - [Discovering Lakes Near You](#3-discovering-lakes-near-you-near-me)
 5. [The Data Provenance](#-the-data-provenance)
 6. [Architecture & System Design](#-architecture--system-design)
 7. [AWS Services Implementation (Judging Criteria)](#-aws-services-implementation-judging-criteria)
@@ -39,13 +39,12 @@ It began with a simple question we asked ourselves:
 
 Most people in Bengaluru don't. We didn't either.
 
-When we opened the Karnataka State Pollution Control Board (KSPCB) monthly monitoring archives for our own neighbourhoods, we discovered something shocking:
-- In a typical 3-kilometre radius containing 7 water bodies, **not a single one appeared in the Board’s monthly reports**.
-- Across Bengaluru, of the 131 lakes the Board *did* test in July 2026: **zero fell into Class A (drinking), Class B (outdoor bathing), or Class C (drinking after treatment)**.
+When we opened the Karnataka State Pollution Control Board (KSPCB) July 2026 Bengaluru lakes report and set it against the lakes on the map, this is what we found:
+- The Board tested **131 lakes** in July 2026. Its monthly *river* reports, which cover 73 monitoring points on 18 rivers, include no lakes at all.
+- The report lists **61 of the 131 lakes as Class D and 70 as Class E**; none as Class A (drinking water after disinfection), B (outdoor bathing) or C (drinking water with conventional treatment). This is the class printed in the report's use-class column.
 - **70 out of 131 lakes (over 53%) came back Class E.** In the Board's own official glossary, *Class E* means:  
   *“Irrigation, industrial cooling, and controlled waste disposal.”*  
-  That is the official designation for the water bodies right next to schools, apartments, parks, and playgrounds.
-- A further **206 of the 342 mapped water bodies** in Bengaluru had **no test reading recorded at all**.
+- A further **206 of the 318 lakes mapped here** have **no reading in that report**.
 
 <div align="center">
   <img src="docs/screenshots/web-landing.png" width="800" alt="Jala Saakshi Landing Page — 131 Lakes Tested, 70 Came Back Class E" />
@@ -53,12 +52,12 @@ When we opened the Karnataka State Pollution Control Board (KSPCB) monthly monit
 </div>
 
 ### The Breaking Point: Doddagubbi Lake
-On **October 1, 2026**, thousands of dead fish floated to the surface of **Doddagubbi Lake** in northeastern Bengaluru, suffocated by untreated sewage and leachate following rains. 
+From **October 1, 2026**, dead fish were reported at **Doddagubbi Lake** in northeastern Bengaluru, and by October 5 news coverage described thousands. Residents quoted in that coverage suspect sewage and leachate entering after heavy rain; we have not established a cause. The Board's July 2026 lake report had already listed the lake as **Class E**, with dissolved oxygen of 3 mg/L and BOD of 7 mg/L.
 
 This was not an anomaly:
 - The **National Green Tribunal (NGT)** documented **61 separate fish kill incidents** in Bengaluru lakes between 2017 and 2023.
 - In **100% of cases**, water quality investigations concluded that **untreated sewage ingress was the primary cause**.
-- Four of the repeat-offender lakes (*Bhattarahalli, Munnekolala, Chelekere, Iblur*) **already have their own sewage treatment plants (STPs)** that were either bypassed, failing, or overwhelmed.
+- Four of the repeat-offender lakes (*Bhattarahalli, Munnekolala, Chelekere, Iblur*) **already have their own sewage treatment plants (STPs)**.
 - The NGT issued formal notices to **five separate agencies** (BBMP, KSPCB, CPCB, Fisheries Department, and the District Commissioner) — yet citizens remained locked out of the loop, unable to report what they saw or track whether anyone ever answered.
 
 **Jala Saakshi (ಜಲ ಸಾಕ್ಷಿ — "The Water's Witness")** was born to bridge this divide.
@@ -70,11 +69,11 @@ This was not an anomaly:
 ### The Core Problem Statement
 > **How can ordinary citizens witness and document what is happening to their local water bodies, translate technical chemical data into actionable evidence, and hold responsible civic authorities accountable?**
 
-### The Ecological Impact
+### The Ecological Impact (general background, not specific to any one lake)
 1. **Severe Dissolved Oxygen Depletion:** Untreated domestic sewage contains high organic loads. As aerobic bacteria decompose the organic matter, they consume all available dissolved oxygen (DO), driving levels below 2.0 mg/L (normal aquatic life requires > 4.0 mg/L), resulting in mass fish asphyxiation.
-2. **Toxic Chemical Frothing:** Excessive household detergents containing synthetic surfactants flow directly into stormwater drains and lakes, generating massive flammable chemical froth plumes (as seen historically at Bellandur and Varthur).
-3. **Pathogen Infiltration:** Coliform bacteria counts regularly exceed 100x the permissible limits, contaminating groundwater recharge aquifers and borewells upon which surrounding residential communities depend.
-4. **Information Asymmetry & Language Barrier:** Official water quality reports are published as obscure scanned PDFs with merged table cells in bureaucratic terminology. Working-class lakeside residents and sanitation workers lack an accessible interface in **Kannada (ಕನ್ನಡ)** to report violations in real-time.
+2. **Surface Froth:** Detergent surfactants are a commonly cited cause of froth on urban lakes, and froth has been reported historically at Bellandur and Varthur.
+3. **Coliform Counts:** Coliform bacteria are the Board's indicator of faecal contamination. In the July 2026 report, **63 of the 131 lakes** record total coliform above 5,000 MPN/100 ml, the Class C limit, and the highest is 330,000.
+4. **Information Asymmetry & Language Barrier:** Official water quality reports are published as scanned PDFs with merged table cells and technical terminology. We built a Kannada-first reporting flow so residents can report what they see in the language they use at the lake.
 
 ---
 
@@ -93,8 +92,8 @@ Jala Saakshi connects two sides of the environmental accountability equation:
 ├──────────────────────────────────────────────┤       ├──────────────────────────────────────────────┤
 │ 📱 Native Kannada & English mobile UI        │       │ 💻 High-density desktop geospatial dashboard │
 │ 🎙️ Kannada voice reporting via browser STT   │       │ ⏱️ Automated 7-day accountability clock      │
-│ 📸 Photo upload with Bedrock AI vision       │       │ 🗺️ River monitoring points vs. lake gap layer│
-│ ✉️ 1-click evidence-backed complaint drafting│       │ 🔍 Incident triage queue with image proofs   │
+│ 📸 Photo upload with GPS location tag        │       │ 🗺️ River monitoring points vs. lake gap layer│
+│ ✉️ 1-click evidence-backed complaint drafting│       │ 🔍 Incident triage queue (prototype)         │
 └──────────────────────────────────────────────┘       └──────────────────────────────────────────────┘
 ```
 
@@ -125,7 +124,7 @@ Designed specifically for mobile devices with high-contrast, tactile UI and **fu
     <td align="center" width="25%">
       <img src="docs/screenshots/app-map-kn.png" width="220" alt="Lake Map - Kannada" /><br />
       <b>4. Lake Map (ಕನ್ನಡ)</b><br />
-      <em>All 342 Bengaluru lakes with official classifications</em>
+      <em>318 mapped Bengaluru lakes, with the July 2026 class where tested</em>
     </td>
   </tr>
 </table>
@@ -159,11 +158,11 @@ Designed specifically for mobile devices with high-contrast, tactile UI and **fu
 
 ### 2. Authority & Civic Bodies Experience: Web Portal & Dashboard
 
-#### 🏢 Authority Triage Portal (`#/authority`)
-Civic authorities (BBMP, KSPCB, Fisheries) access an operational triage queue tracking every citizen-reported incident.
-- **Automated Accountability Clock:** Tracks how many days an incident has sat without official acknowledgment (highlighting overdue cases > 7 days).
-- **Incident Categorization:** Surface froth, sewage inflow, chemical discharge, or fish kill.
-- **Evidence Verification:** Compares the citizen's photo against historical water quality readings and satellite frames.
+#### 🏢 Authority Triage Portal (`#/authority`), prototype
+A prototype of the triage queue that civic bodies (BBMP, KSPCB, Fisheries) would use. It runs on seeded example cases plus any reports filed in the same browser. It is not connected to a server or to any agency's systems.
+- **Accountability Clock:** Counts the days a report has gone without acknowledgment; reports open for more than 7 days are counted as open.
+- **Incident Categories:** Dead fish, froth, sewage inflow, algae, foul smell, floating waste, illegal dumping, or other, chosen by the person reporting.
+- **Evidence:** The citizen's photo and location travel with the report. Automatic photo classification is designed (Amazon Bedrock) but not deployed.
 
 <div align="center">
   <img src="docs/screenshots/web-authority-portal.png" width="800" alt="Jala Saakshi Authority Portal — Incident Triage Queue" />
@@ -172,9 +171,9 @@ Civic authorities (BBMP, KSPCB, Fisheries) access an operational triage queue tr
 
 #### 🗺️ Geospatial Water Quality Dashboard (`#/dashboard`)
 A full desktop research interface displaying **8 years of water quality data across Karnataka**:
-- **Timeline Scrubber:** Step through 30 monthly monitoring cycles from 2018 to August 2026.
+- **Timeline Scrubber:** Step through 29 monthly reports from April 2018 to August 2026.
 - **Color-Blind Accessible Scale:** Points are lettered (`A`, `B`, `C`, `D`, `E`) and styled with distinct high-contrast hues.
-- **The "Lake Gap Layer":** Overlays all 342 OpenStreetMap lake boundaries over KSPCB's river stations, visually highlighting unmonitored water bodies.
+- **The "Lake Gap Layer":** Overlays the 318 mapped lakes over KSPCB's river stations, coloured by the class in the July 2026 lakes report, with untested lakes in grey.
 
 <div align="center">
   <img src="docs/screenshots/web-dashboard.png" width="800" alt="Water Quality Explorer Dashboard" />
@@ -184,15 +183,15 @@ A full desktop research interface displaying **8 years of water quality data acr
 ---
 
 ### 3. Discovering Lakes Near You (`#/near-me`)
-Citizens can enter their location or grant browser geolocation to see what the state knows about their immediate surroundings:
-1. Identifies every water body within a **3 km radius**.
-2. Displays the nearest tested lake's Dissolved Oxygen (DO), Biochemical Oxygen Demand (BOD), and fecal coliform levels.
-3. Translates technical metrics into plain language (e.g., *"Safe for fish"*, *"Severe sewage contamination"*).
-4. Clearly flags water bodies that have **zero official monitoring**.
+Citizens can grant browser geolocation (it starts from central Bengaluru if they decline) to see what the Board recorded near them:
+1. Finds every mapped lake within a **3 km radius**.
+2. Shows the nearest tested lake's class, dissolved oxygen, BOD and total coliform from the July 2026 report.
+3. Explains the class in the Board's own words.
+4. Says how many mapped lakes have no reading at all.
 
 <div align="center">
-  <img src="docs/screenshots/web-landing-evidence.png" width="800" alt="Evidence Layer — Monitoring Points & Lake Gap" />
-  <p><em>The Evidence Layer: Interactive gap analysis between government monitoring points and actual urban lakes.</em></p>
+  <img src="docs/screenshots/web-near-me.png" width="800" alt="Near me: the guided tour of lakes within 3 km" />
+  <p><em>The near-me tour: a seven-step walk through the lakes around you and what the Board recorded.</em></p>
 </div>
 
 ---
@@ -203,11 +202,11 @@ To build Jala Saakshi, we excavated and standardized fragmented public data that
 
 | Dataset | Volume & Scope | Source | Processing Method |
 | :--- | :--- | :--- | :--- |
-| **Karnataka River Monitoring Reports** | **1,183 readings**, 160 stations, 28 rivers (2018–2026) | KSPCB Monthly PRS Water Quality Reports | Extracted from 30 complex PDFs with merged cells using `pdfplumber` pipeline. |
-| **Bengaluru Lakes Monitoring** | **131 lakes tested** (July 2026) | KSPCB Bengaluru Lake Health Reports | Parsed into structured JSON (`lakes-2026-07.json`). |
-| **Bengaluru Lake Polygons** | **342 named water bodies** | OpenStreetMap (OSM) Overpass API | Converted to GeoJSON (`all-lakes.geojson`) and matched via custom spatial point-in-polygon algorithm (`scripts/match-lakes.mjs`). |
-| **National River Network** | **23,826 river line features** | India-WRIS / National River Network | Optimized GeoJSON coordinates to 5 decimal places (~1m accuracy), reduced from 54 MB to 5.5 MB. |
-| **Sentinel-2 L2A Satellite Imagery** | 5-day revisit multispectral tiles | **AWS Open Data Registry** (`s3://sentinel-cogs`) | 10m true-colour spatial resolution capturing surface algae and water extents. |
+| **Karnataka River Monitoring Reports** | **1,182 readings** from 73 monitoring points on 18 rivers (2018–2026) | KSPCB Monthly PRS Water Quality Reports | Extracted from 29 monthly reports (16 PDF files) with merged cells using a `pdfplumber` pipeline. |
+| **Bengaluru Lakes Monitoring** | **131 lakes tested** (July 2026), 61 Class D and 70 Class E | KSPCB Bengaluru Lakes report, July 2026 | Parsed into structured JSON (`lakes-2026-07.json`). |
+| **Bengaluru Lake Polygons** | **318 mapped lakes** (340 named OSM polygons, less 22 drains, channels and pools) | OpenStreetMap (OSM) Overpass API | Converted to GeoJSON (`all-lakes.geojson`) and matched by point-in-polygon, then nearest polygon within 300 m (`scripts/match-lakes.mjs`): 112 of the 131 tested lakes matched, 19 are shown as points. |
+| **National River Network** | **23,826 river line features** | River network GeoJSON | Coordinates rounded to 5 decimal places (~1 m accuracy), reducing the file from 54 MB to 5.5 MB. |
+| **Sentinel-2 L2A Satellite Imagery** | 5-day revisit multispectral tiles | **AWS Open Data Registry** (`s3://sentinel-cogs`) | True-colour 10 m scenes of Doddagubbi, six clear dates from May to October 2026. Our algae index is saturated and does not isolate the October event. |
 
 ---
 
@@ -223,18 +222,18 @@ Jala Saakshi uses a **serverless, data-first architecture** designed to be low-c
 ```mermaid
 flowchart TD
     subgraph DataSources["A · DATA SOURCES"]
-        PDF["KSPCB Monthly PDFs<br/>(30 reports · 2018-2026)"]
-        OSM["OpenStreetMap<br/>(342 lake polygons)"]
+        PDF["KSPCB Monthly PDFs<br/>(29 reports · 2018-2026)"]
+        OSM["OpenStreetMap<br/>(318 mapped lakes)"]
         S2["Sentinel-2 L2A<br/>(AWS Open Data Registry)"]
         OM["Open-Meteo<br/>(Daily rainfall API)"]
     end
 
     subgraph Storage["B · INGESTION & STORAGE"]
-        PIPE["Python Extraction Pipeline<br/>(pdfplumber · 1,183 readings)"]
-        S3["Amazon S3<br/>(readings.json · GeoJSON · satellite tiles)"]
+        PIPE["Python Extraction Pipeline<br/>(pdfplumber · 1,182 readings)"]
+        DATA["Static data files<br/>(readings.json · GeoJSON · satellite frames)<br/>committed to Git"]
     end
 
-    subgraph Backend["C · SERVERLESS BACKEND (SAM)"]
+    subgraph Backend["C · SERVERLESS BACKEND (SAM) · designed, not yet deployed"]
         APIGW["Amazon API Gateway (HTTP API v2)<br/>CORS & Rate Limiting (5 req/s)"]
         LAMBDA["AWS Lambda (Python 3.12)<br/>analyze_photo · draft_complaint"]
         BEDROCK["Amazon Bedrock (Amazon Nova Lite)<br/>Multimodal Vision & Bilingual Generation"]
@@ -254,10 +253,10 @@ flowchart TD
     end
 
     PDF --> PIPE
-    PIPE --> S3
-    OSM --> S3
-    S2 --> S3
-    S3 -.-> LAMBDA
+    PIPE --> DATA
+    OSM --> DATA
+    S2 --> DATA
+    DATA --> GIT
     
     MOBILE -->|Upload photo & note| APIGW
     APIGW --> LAMBDA
@@ -283,8 +282,8 @@ Every AWS service is thoughtfully chosen to adhere to the AWS Well-Architected F
 | **Amazon CloudFront** | Content Delivery Network | `DEPLOYED` | Fronts Amplify Hosting to serve static JavaScript bundles, CSS, and multi-megabyte GeoJSON datasets across edge locations with sub-50ms latency in India. |
 | **Amazon Bedrock** | Generative AI & Vision | `DESIGNED` | Utilizes **Amazon Nova Lite (`us.amazon.nova-lite-v1:0`)**: <br/>1. **Multimodal classification (`POST /analyze-photo`):** Detects surface froth, sewage outfalls, algal blooms, or fish mortality with severity scores (1–5).<br/>2. **Formal letter generation (`POST /draft-complaint`):** Synthesizes citizen observations with historical chemical readings to draft formal complaints in English, Kannada, and Hindi. |
 | **AWS Lambda** | Serverless Compute | `DESIGNED` | Runs Python 3.12 handlers behind API Gateway. Completely decouples AI inferencing from client-side code so zero AWS credentials reach the browser. |
-| **Amazon API Gateway** | Managed REST Interface | `DESIGNED` | HTTP API (v2) configured with strict CORS whitelist for the Amplify domain, payload size limits (rejects > 6MB), and throttling (5 requests/sec, burst 10) to eliminate DDoS risks. |
-| **Amazon S3** | Object Storage | `DESIGNED` | Stores immutable extracted datasets (`readings.json`, `lakes-2026-07.json`), GeoJSON river networks, and cached satellite imagery. Enables runtime swapping via `VITE_DATA_URL`. |
+| **Amazon API Gateway** | Managed REST Interface | `DESIGNED` | HTTP API (v2) configured with strict CORS whitelist for the Amplify domain, payload size limits (rejects > 4MB), and throttling (5 requests/sec, burst 10) to eliminate DDoS risks. |
+| **Static data files** | Dataset delivery | `DEPLOYED` | No S3 bucket is used or declared today. The datasets (`readings.json`, `lakes-2026-07.json`, GeoJSON, satellite frames) are files in the repo, served through Amplify and CloudFront. `VITE_DATA_URL` lets the app read readings from elsewhere, such as a bucket, later. |
 | **AWS Open Data Registry** | Geospatial Data Source | `INTEGRATED` | Consumes public **Sentinel-2 L2A Cloud-Optimized GeoTIFFs (COGs)** directly from `s3://sentinel-cogs` without incurring licensing or egress storage fees. |
 | **Amazon CloudWatch** | Monitoring & Logging | `DESIGNED` | Captures Lambda latency, invocation rates, and error traces while sanitizing base64 image payloads from log streams to protect privacy. |
 | **AWS IAM** | Security & Access Control | `DESIGNED` | Implements strict least-privilege roles for Lambda execution, scoped specifically to `bedrock:InvokeModel` on the Nova Lite inference profile. |
@@ -296,7 +295,7 @@ Every AWS service is thoughtfully chosen to adhere to the AWS Well-Architected F
 ## 💻 Quick Start & Local Development
 
 ### Prerequisites
-- **Node.js** ≥ 18
+- **Node.js** ≥ 20.19 (22 recommended, see `.nvmrc`)
 - **Python** ≥ 3.10
 - **npm** ≥ 9
 
@@ -357,8 +356,8 @@ Created with ❤️ for Bengaluru's lakes by:
 ### Official Data Citations
 - **Water Quality Data:** Karnataka State Pollution Control Board (KSPCB) Monthly Monitoring Reports (2018–2026).
 - **Fish Kill Statistics:** National Green Tribunal (NGT) Suo Motu Proceedings, as cited in *Deccan Herald* (June 2024).
-- **Incident Coverage:** *Bangalore Mirror / Deccan Herald* reports on Doddagubbi Lake (October 2026).
-- **Basemaps & Boundaries:** OpenStreetMap contributors & India-WRIS.
+- **Incident Coverage:** *Bangalore Mirror*, "Dead fish raise red flag over Doddagubbi lake pollution", 5 October 2026.
+- **Basemaps & Boundaries:** OpenStreetMap contributors; Esri (satellite and dark basemaps in the near-me tour).
 
 ---
 
