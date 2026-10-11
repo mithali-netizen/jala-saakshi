@@ -344,3 +344,20 @@ textarea, select { width: 100%; padding: .75rem; resize: vertical; color: var(--
 .home-top .lang-toggle button.selected { color: var(--color-brand-dark); }
 .map-header .lang-toggle { background: #fff; box-shadow: 0 6px 20px rgba(15,23,42,.12); }
 .header-action { min-width: auto; }
+
+/* ── Phone status bar ────────────────────────────────────────────────────────
+   Overlaid, so a coloured screen header runs underneath it like a real phone. */
+.status-bar {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 30;
+  height: 2.6rem; padding: 0 1.5rem 0 1.75rem;
+  display: flex; align-items: center; justify-content: space-between;
+  pointer-events: none; font-size: .82rem; font-weight: 650;
+  letter-spacing: -.01em; font-variant-numeric: tabular-nums;
+}
+.status-bar-dark { color: var(--color-ink); }
+.status-bar-light { color: #fff; }
+.status-icons { display: flex; align-items: center; gap: .3rem; }
+
+/* Room for the bar, so screen content is not hidden behind it. */
+.phone-content { padding-top: 2.6rem; }
+.home-top, .map-screen { margin-top: -2.6rem; padding-top: 2.6rem; }

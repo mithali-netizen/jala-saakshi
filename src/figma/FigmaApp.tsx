@@ -168,8 +168,48 @@ function BottomNav({ active, navigate }: { active: Screen; navigate: (screen: Sc
   )}</nav>;
 }
 
-function MobileFrame({ children, active, navigate }: { children: ReactNode; active?: Screen; navigate: (screen: Screen) => void }) {
-  return <main className="app-stage"><div className="phone-shell"><div className="phone-content">{children}</div>{active && <BottomNav active={active} navigate={navigate} />}</div></main>;
+/**
+ * The phone's own status bar: live clock, signal, wi-fi, battery.
+ *
+ * It sits over the top of the screen the way a real one does, so a coloured header
+ * runs underneath it. `tone` picks white or dark glyphs depending on what is behind.
+ */
+function StatusBar({ tone = "dark" }: { tone?: "dark" | "light" }) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    // Tick on the minute rather than every second; nothing here shows seconds.
+    const id = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const time = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return (
+    <div className={`status-bar status-bar-${tone}`} aria-hidden>
+      <span className="status-time">{time}</span>
+      <span className="status-icons">
+        <svg viewBox="0 0 18 12" width="17" height="11" fill="currentColor">
+          <rect x="0" y="8" width="3" height="4" rx="1" />
+          <rect x="5" y="5.5" width="3" height="6.5" rx="1" />
+          <rect x="10" y="3" width="3" height="9" rx="1" />
+          <rect x="15" y="0" width="3" height="12" rx="1" opacity="0.35" />
+        </svg>
+        <svg viewBox="0 0 16 12" width="15" height="11" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+          <path d="M1 4.2a10 10 0 0 1 14 0" />
+          <path d="M3.6 6.9a6.4 6.4 0 0 1 8.8 0" />
+          <path d="M6.2 9.5a2.7 2.7 0 0 1 3.6 0" />
+        </svg>
+        <svg viewBox="0 0 26 12" width="24" height="11" fill="none">
+          <rect x="0.6" y="0.6" width="21" height="10.8" rx="3" stroke="currentColor" strokeOpacity="0.5" />
+          <rect x="2.2" y="2.2" width="14" height="7.6" rx="1.8" fill="currentColor" />
+          <path d="M23.4 4.2v3.6a2.2 2.2 0 0 0 0-3.6z" fill="currentColor" fillOpacity="0.5" />
+        </svg>
+      </span>
+    </div>
+  );
+}
+
+function MobileFrame({ children, active, navigate, statusTone }: { children: ReactNode; active?: Screen; navigate: (screen: Screen) => void; statusTone?: "dark" | "light" }) {
+  return <main className="app-stage"><div className="phone-shell"><StatusBar tone={statusTone} /><div className="phone-content">{children}</div>{active && <BottomNav active={active} navigate={navigate} />}</div></main>;
 }
 
 function SectionTitle({ children, action }: { children: ReactNode; action?: ReactNode }) {
@@ -178,7 +218,7 @@ function SectionTitle({ children, action }: { children: ReactNode; action?: Reac
 
 function HomeScreen({ navigate }: { navigate: (screen: Screen) => void }) {
   const { t } = useLanguage();
-  return <MobileFrame active="home" navigate={navigate}>
+  return <MobileFrame active="home" navigate={navigate} statusTone="light">
     <div className="home-top">
       <MobileHeader action={<LangToggle />} />
       <div className="greeting"><p>{new Date().getHours() < 12 ? t("greetingMorning") : new Date().getHours() < 17 ? t("greetingAfternoon") : t("greetingEvening")}</p><h1>{t("homeTitle")}</h1></div>
