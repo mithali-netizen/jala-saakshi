@@ -17,6 +17,7 @@ import { useData } from '../context/DataContext';
 import GapMap from '../story/components/GapMap';
 import { formatMonth } from '../utils/months';
 import { APP_NAME } from '../brand';
+import { SentinelStrip } from './SentinelStrip';
 
 /* ── Motion helpers ─────────────────────────────────────────────────────────── */
 
@@ -444,12 +445,6 @@ export default function Landing() {
       <main>
         {/* Hero */}
         <section className="hero-surface relative overflow-hidden text-white">
-          <img
-            src="/images/dead-fish.jpg"
-            alt=""
-            aria-hidden
-            className="hero-fish pointer-events-none absolute inset-0 h-full w-full object-cover"
-          />
           <div className="shell relative grid gap-12 pb-20 pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-center lg:pb-28 lg:pt-24">
             <div>
               <Reveal>
@@ -576,6 +571,9 @@ export default function Landing() {
                   <button type="button" className={chip} onClick={() => mapApi.current?.bengaluru()}>
                     Zoom to Doddagubbi
                   </button>
+                  <a href="#/near-me" className={`${chip} no-underline`}>
+                    See what this means near you
+                  </a>
                 </div>
               </div>
               {ready ? (
@@ -598,16 +596,20 @@ export default function Landing() {
               </div>
             </div>
           </Reveal>
+
+          <Reveal className="mt-8">
+            <div className="rounded-3xl border border-blue-100 bg-white/90 p-5 shadow-xl shadow-blue-900/5 backdrop-blur sm:p-7">
+              <h3 className="font-display mb-1 text-lg font-bold text-slate-900">The lake from space</h3>
+              <p className="mb-5 max-w-2xl text-sm text-slate-600">
+                The same lake over five months, at the resolution the satellite actually gives.
+              </p>
+              <SentinelStrip />
+            </div>
+          </Reveal>
         </section>
 
         {/* This keeps happening */}
         <section id="problem" className="fish-section relative scroll-mt-20 overflow-hidden py-24 text-white">
-          <img
-            src="/images/dead-fish.jpg"
-            alt=""
-            aria-hidden
-            className="fish-bg pointer-events-none absolute inset-0 h-full w-full object-cover"
-          />
           <div className="shell relative">
             <Reveal>
               <Eyebrow tone="light">This keeps happening</Eyebrow>

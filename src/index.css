@@ -243,13 +243,9 @@ html, body, #root {
   content: "";
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(60rem 28rem at 85% -10%, rgba(20, 184, 166, 0.22), transparent 60%),
-    radial-gradient(40rem 24rem at -5% 110%, rgba(244, 63, 94, 0.14), transparent 60%);
-  animation: hero-drift 14s ease-in-out infinite alternate;
+  background: radial-gradient(58rem 34rem at 26% 40%, rgba(72, 124, 194, 0.20), transparent 68%);
   pointer-events: none;
 }
-@keyframes hero-drift { to { transform: translate3d(-2%, 2%, 0) scale(1.05); } }
 
 .app-surface { background: linear-gradient(180deg, #f0fdfa 0%, #f8fafc 100%); }
 
@@ -277,7 +273,6 @@ html, body, #root {
 
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
-  .hero-surface::before { animation: none; }
   .lift:hover, .aws-card:hover, .phone-wrap:hover .phone-shot { transform: none; }
 }
 
@@ -290,28 +285,9 @@ html, body, #root {
     linear-gradient(180deg, #e8f1fc 0%, #d9e8f9 50%, #e6f0fb 100%);
 }
 
-.hero-surface { background: linear-gradient(160deg, #06152b 0%, #0b2447 55%, #12376b 100%); }
-.hero-surface::before {
-  background:
-    radial-gradient(55rem 26rem at 85% -10%, rgba(56, 160, 255, 0.28), transparent 60%),
-    radial-gradient(40rem 24rem at -5% 110%, rgba(244, 63, 94, 0.14), transparent 60%);
-}
-.hero-fish {
-  opacity: 0.16;
-  mix-blend-mode: luminosity;
-  -webkit-mask-image: linear-gradient(100deg, transparent 5%, #000 55%, #000 100%), linear-gradient(180deg, #000 55%, transparent 92%);
-  -webkit-mask-composite: source-in;
-  mask-image: linear-gradient(100deg, transparent 5%, #000 55%, #000 100%), linear-gradient(180deg, #000 55%, transparent 92%);
-  mask-composite: intersect;
-}
-
-.fish-section { background: linear-gradient(180deg, #0b2447 0%, #0a1d3b 100%); }
-.fish-bg {
-  opacity: 0.12;
-  mix-blend-mode: luminosity;
-  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 20%, #000 70%, transparent 95%);
-  mask-image: linear-gradient(180deg, transparent 0%, #000 20%, #000 70%, transparent 95%);
-}
+/* Flat base. The only lift is a soft pool behind the headline on the left. */
+.hero-surface { background: #0A1628; }
+.fish-section { background: #0A1628; }
 
 .app-surface { background: linear-gradient(180deg, rgba(186, 220, 252, 0.55) 0%, rgba(214, 233, 252, 0.3) 100%); }
 .aws-surface { background: linear-gradient(180deg, #0a1d3b 0%, #061226 100%); }
@@ -342,4 +318,15 @@ a:hover > .device-float, a:hover .device-float { transform: translateY(-8px); }
 
 @media (prefers-reduced-motion: reduce) {
   .feature-card:hover, .notice-card:hover, .arch-frame:hover, a:hover .device-float { transform: none; }
+}
+
+/* ── Guided tour: "the lakes near you" ───────────────────────────────────────── */
+.nm-you-wrap { background: none; border: 0; }
+.nm-you {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #0f766e;
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.3), 0 0 0 2px #fff inset;
 }
