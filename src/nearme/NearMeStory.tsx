@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import { ArrowLeft, ArrowRight, Megaphone, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { LAKES_ATTRIBUTION } from '../services/lakes';
+import { BASEMAPS, BASEMAP_ORDER, loadBasemap, saveBasemap, type BasemapId } from '../services/basemaps';
 import { DODDAGUBBI, FIRST_DEAD_FISH, NEWS_READING } from '../services/doddagubbi';
 import { formatDay } from '../utils/dates';
 import { useGeotag } from '../services/geotag';
@@ -35,10 +36,13 @@ export default function NearMeStory() {
   const { lakes, locations, stats, isLoading } = useData();
   const geo = useGeotag();
   const [step, setStep] = useState(0);
+  const [basemap, setBasemap] = useState<BasemapId>(loadBasemap);
 
   const host = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layerRef = useRef<L.LayerGroup | null>(null);
+  const tileRef = useRef<L.TileLayer | null>(null);
+  const labelRef = useRef<L.TileLayer | null>(null);
 
   // Device fix when we have one; otherwise the city centre, said plainly on the card.
   const origin = geo.fix ? { lat: geo.fix.lat, lng: geo.fix.lng } : BENGALURU_CENTRE;
@@ -55,10 +59,6 @@ export default function NearMeStory() {
   useEffect(() => {
     if (!host.current || mapRef.current) return;
     const map = L.map(host.current, { preferCanvas: true, zoomControl: false, attributionControl: true });
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxZoom: 19,
-    }).addTo(map);
     L.control.zoom({ position: 'topright' }).addTo(map);
     map.setView([BENGALURU_CENTRE.lat, BENGALURU_CENTRE.lng], 12);
     mapRef.current = map;
@@ -68,10 +68,32 @@ export default function NearMeStory() {
       ro.disconnect();
       layerRef.current?.remove();
       layerRef.current = null;
+      tileRef.current = null;
+      labelRef.current = null;
       mapRef.current = null;
       map.remove();
     };
   }, []);
+
+  // Swap the basemap without disturbing the overlays.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const spec = BASEMAPS[basemap];
+    tileRef.current?.remove();
+    labelRef.current?.remove();
+    labelRef.current = null;
+    tileRef.current = L.tileLayer(spec.url, {
+      attribution: spec.attribution,
+      maxZoom: spec.maxZoom,
+      subdomains: spec.subdomains ?? 'abc',
+    }).addTo(map);
+    tileRef.current.bringToBack();
+    if (spec.labelsUrl) {
+      labelRef.current = L.tileLayer(spec.labelsUrl, { maxZoom: spec.maxZoom }).addTo(map);
+    }
+    saveBasemap(basemap);
+  }, [basemap]);
 
   // Redraw for the current step.
   useEffect(() => {
@@ -89,13 +111,15 @@ export default function NearMeStory() {
     });
     const you = () => L.marker([facts.origin.lat, facts.origin.lng], { icon: youIcon }).addTo(group);
 
+    const onImagery = basemap !== 'map';
     const drawNearby = (dim: boolean) => {
       for (const n of facts.nearby) {
         L.polygon(n.lake.rings, {
-          color: n.hasReading ? '#0f766e' : '#475569',
-          weight: 1.5,
+          // Satellite imagery swallows a grey outline, so brighten it there.
+          color: onImagery ? '#f8fafc' : n.hasReading ? '#0f766e' : '#475569',
+          weight: onImagery ? 2.5 : 1.5,
           fillColor: n.hasReading ? '#14b8a6' : '#64748b',
-          fillOpacity: dim ? 0.3 : 0.5,
+          fillOpacity: onImagery ? (dim ? 0.18 : 0.3) : dim ? 0.3 : 0.5,
         })
           .bindTooltip(`<strong>${n.lake.name}</strong><br/>${formatKm(n.km)} away`, { direction: 'top' })
           .addTo(group);
@@ -159,7 +183,7 @@ export default function NearMeStory() {
       map.attributionControl.removeAttribution(`Lakes: ${LAKES_ATTRIBUTION}`);
       if (mapRef.current === map) group.remove();
     };
-  }, [step, facts]);
+  }, [step, facts, basemap]);
 
   // ── keyboard ───────────────────────────────────────────────────────────────
   const go = useCallback((delta: number) => setStep((s) => Math.min(STEP_COUNT - 1, Math.max(0, s + delta))), []);
@@ -296,6 +320,14 @@ export default function NearMeStory() {
       </a>
 
       <div ref={host} className="absolute inset-0" />
+
+      <div className="basemap-switch absolute right-4 top-[6.5rem] z-[1000]" role="group" aria-label="Basemap">
+        {BASEMAP_ORDER.map((id) => (
+          <button key={id} type="button" aria-pressed={basemap === id} onClick={() => setBasemap(id)}>
+            {BASEMAPS[id].label}
+          </button>
+        ))}
+      </div>
 
       <a
         href="#/"

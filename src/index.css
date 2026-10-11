@@ -330,3 +330,13 @@ a:hover > .device-float, a:hover .device-float { transform: translateY(-8px); }
   background: #0f766e;
   box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.3), 0 0 0 2px #fff inset;
 }
+
+/* Basemap switcher */
+.basemap-switch { display: inline-flex; padding: 2px; gap: 2px; border-radius: 0.6rem; background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(6px); }
+.basemap-switch button {
+  padding: 0.3rem 0.6rem; border: 0; border-radius: 0.45rem;
+  background: transparent; color: rgba(226, 232, 240, 0.75);
+  font-size: 0.72rem; font-weight: 650; cursor: pointer;
+}
+.basemap-switch button:hover { color: #fff; }
+.basemap-switch button[aria-pressed='true'] { background: #0f766e; color: #fff; }
