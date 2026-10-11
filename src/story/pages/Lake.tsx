@@ -4,7 +4,7 @@ import SatelliteStrip from "../components/SatelliteStrip";
 import ComplaintCard from "../components/ComplaintCard";
 import { Card, SourceTag } from "../components/ui";
 import { DO_LOW_MG_L, RAIN_TRIGGER_MM, getRainfall, rainRuleMet, type RainResult } from "../../services/rainfall";
-import { DODDAGUBBI, FIRST_DEAD_FISH } from "../../services/doddagubbi";
+import { DODDAGUBBI, FIRST_DEAD_FISH, LAKE_READING } from "../../services/doddagubbi";
 import { formatDay } from "../../utils/dates";
 
 /** Dates as reported in news coverage (supplied by the team; not in the KSPCB dataset). */
@@ -12,8 +12,6 @@ const HEAVY_RAIN_REPORTED = "2026-09-30";
 const THOUSANDS_REPORTED = "2026-10-05";
 
 /** July 2026 KSPCB reading for the lake, quoted in news coverage. */
-const NEWS_READING = { month: "July 2026", cls: "E", doMgL: 3, bod: 22, coliform: 5400 };
-
 const dayDiff = (a: string, b: string) =>
   Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8)) - Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8))) / 86_400_000);
 
@@ -82,7 +80,7 @@ function RuleSection() {
   const met = rain.data ? rain.data.days.map((_, i) => rainRuleMet(rain.data!.days, i)) : [];
   const firstIdx = met.indexOf(true);
   const firstDate = firstIdx >= 0 ? rain.data!.days[firstIdx].date : null;
-  const lowDO = NEWS_READING.doMgL < DO_LOW_MG_L;
+  const lowDO = LAKE_READING.do < DO_LOW_MG_L;
   const elevated = lowDO && firstDate !== null;
 
   return (
@@ -105,8 +103,7 @@ function RuleSection() {
           <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold text-white ${lowDO ? "bg-brand" : "bg-slate-400"}`}>2</span>
           <span>
             <b>Low oxygen.</b> The latest KSPCB dissolved-oxygen reading is below {DO_LOW_MG_L} mg/L, the level under which fish
-            start to struggle. For this lake the only value we have is {NEWS_READING.doMgL} mg/L ({NEWS_READING.month}, quoted in
-            news coverage). <SourceTag>News coverage</SourceTag>
+            start to struggle. For this lake the only value we have is {LAKE_READING.do} mg/L ({LAKE_READING.month}). <SourceTag>KSPCB lakes report</SourceTag>
           </span>
         </li>
       </ol>
@@ -126,7 +123,7 @@ function RuleSection() {
         <li>The {RAIN_TRIGGER_MM} mm threshold is ours, chosen for this demo. It is not an official rainfall category.</li>
         <li>One oxygen value cannot show that oxygen is chronically low. It would take repeated monthly readings, which this lake does not have in the dataset.</li>
         <li>
-          Low oxygen with BOD of {NEWS_READING.bod} mg/L (well above the 3 mg/L limit for Class B and C) is consistent with sewage and organic load. This page does not establish a cause.
+          Low oxygen with BOD of {LAKE_READING.bod} mg/L (well above the 3 mg/L limit for Class B and C) is consistent with sewage and organic load. This page does not establish a cause.
         </li>
       </ul>
     </div>
@@ -155,8 +152,8 @@ export default function Lake() {
           <li><b className="inline-block w-24">1 Oct 2026</b> First dead fish seen.</li>
           <li><b className="inline-block w-24">5 Oct 2026</b> Thousands of dead fish reported.</li>
           <li>
-            <b className="inline-block w-24">{NEWS_READING.month}</b> KSPCB reading quoted: Class {NEWS_READING.cls}, dissolved oxygen {NEWS_READING.doMgL} mg/L, BOD{" "}
-            {NEWS_READING.bod} mg/L, coliform {NEWS_READING.coliform.toLocaleString()} MPN/100 ml.
+            <b className="inline-block w-24">{LAKE_READING.month}</b> KSPCB reading: Class {LAKE_READING.waterClass}, dissolved oxygen {LAKE_READING.do} mg/L, BOD{" "}
+            {LAKE_READING.bod} mg/L, coliform {LAKE_READING.totalColiform.toLocaleString()} MPN/100 ml.
           </li>
         </ul>
       </Card>

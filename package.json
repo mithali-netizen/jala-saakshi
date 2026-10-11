@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "shoot:app": "node scripts/shoot-app.mjs"
+    "shoot:app": "node scripts/shoot-app.mjs",
+    "match:lakes": "node scripts/match-lakes.mjs"
   },
   "dependencies": {
     "@types/leaflet": "^1.9.22",

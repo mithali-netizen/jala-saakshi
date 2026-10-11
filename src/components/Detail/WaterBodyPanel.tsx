@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapPin, X } from 'lucide-react';
-import { NEWS_READING, REPORTED_TIMELINE } from '../../services/doddagubbi';
+import { LAKE_READING, REPORTED_TIMELINE } from '../../services/doddagubbi';
 import type { WaterBody } from '../../services/waterBodies';
 import type { Stats } from '../../services/stats';
 import { daysSince, formatDay } from '../../utils/dates';
@@ -86,16 +86,16 @@ export const WaterBodyPanel: React.FC<{
       <section>
         <div className="mb-1.5 flex items-center justify-between gap-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
-            {NEWS_READING.month} reading
+            {LAKE_READING.month} reading
           </h3>
           <Source>News coverage</Source>
         </div>
         <div className="grid grid-cols-4 gap-1.5 text-center">
           {[
-            { k: 'Class', v: NEWS_READING.waterClass },
-            { k: 'DO', v: `${NEWS_READING.do}` },
-            { k: 'BOD', v: `${NEWS_READING.bod}` },
-            { k: 'Coliform', v: NEWS_READING.totalColiform.toLocaleString() },
+            { k: 'Class', v: LAKE_READING.waterClass },
+            { k: 'DO', v: `${LAKE_READING.do}` },
+            { k: 'BOD', v: `${LAKE_READING.bod}` },
+            { k: 'Coliform', v: LAKE_READING.totalColiform.toLocaleString() },
           ].map((m) => (
             <div key={m.k} className="rounded-lg border border-slate-200 px-1 py-1.5">
               <div className="text-sm font-bold tabular-nums text-slate-900">{m.v}</div>

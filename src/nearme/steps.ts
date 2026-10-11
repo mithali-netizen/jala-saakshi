@@ -2,6 +2,7 @@ import type { Lake } from '../services/lakes';
 import type { MonitoringLocation } from '../utils/stations';
 import { hasValues } from '../utils/stations';
 import { formatMonth } from '../utils/months';
+import type { LakeReading, LakeReadingsFile } from '../services/lakeReadings';
 
 /**
  * Everything the guided tour states, worked out from the data at runtime.
@@ -13,9 +14,6 @@ import { formatMonth } from '../utils/months';
 
 /** How far out "near you" reaches. */
 export const NEARBY_RADIUS_KM = 3;
-
-/** A monitoring point this close to a lake would plausibly be measuring that lake. */
-const SAME_WATER_BODY_KM = 0.25;
 
 /** Fallback when geolocation is refused or unavailable: central Bengaluru. */
 export const BENGALURU_CENTRE = { lat: 12.9716, lng: 77.5946 };
@@ -31,8 +29,8 @@ export function haversineKm(lat1: number, lng1: number, lat2: number, lng2: numb
 export interface NearbyLake {
   lake: Lake;
   km: number;
-  /** True only if a monitoring point sits close enough to be measuring this water body. */
-  hasReading: boolean;
+  /** The lake's July 2026 KSPCB reading, when it was one of those tested. */
+  reading: LakeReading | null;
 }
 
 export interface NearestPoint {
@@ -49,7 +47,10 @@ export interface TourFacts {
   /** Whether the origin came from the device or is the fallback centre. */
   located: boolean;
   nearby: NearbyLake[];
+  /** Nearby lakes with no entry in the July 2026 lakes report. */
   withoutReading: number;
+  /** The closest lake that was actually tested, however far away it is. */
+  nearestTested: NearbyLake | null;
   nearest: NearestPoint | null;
 }
 
@@ -58,19 +59,18 @@ export function computeFacts(
   located: boolean,
   lakes: Lake[],
   locations: MonitoringLocation[],
+  lakeReadings: LakeReadingsFile | null,
 ): TourFacts {
-  const nearby: NearbyLake[] = lakes
-    .map((lake) => ({ lake, km: haversineKm(origin.lat, origin.lng, lake.lat, lake.lng) }))
-    .filter((n) => n.km <= NEARBY_RADIUS_KM)
-    .sort((a, b) => a.km - b.km)
-    .map(({ lake, km }) => ({
+  const withDistance = lakes
+    .map((lake) => ({
       lake,
-      km,
-      // A lake counts as measured only if a monitoring point is effectively on it.
-      hasReading: locations.some(
-        (loc) => haversineKm(lake.lat, lake.lng, loc.lat, loc.lng) <= SAME_WATER_BODY_KM,
-      ),
-    }));
+      km: haversineKm(origin.lat, origin.lng, lake.lat, lake.lng),
+      reading: lakeReadings?.byOsmId[lake.osmId] ?? null,
+    }))
+    .sort((a, b) => a.km - b.km);
+
+  const nearby: NearbyLake[] = withDistance.filter((n) => n.km <= NEARBY_RADIUS_KM);
+  const nearestTested = withDistance.find((n) => n.reading) ?? null;
 
   let nearest: NearestPoint | null = null;
   if (locations.length > 0) {
@@ -93,7 +93,8 @@ export function computeFacts(
     origin,
     located,
     nearby,
-    withoutReading: nearby.filter((n) => !n.hasReading).length,
+    withoutReading: nearby.filter((n) => !n.reading).length,
+    nearestTested,
     nearest,
   };
 }

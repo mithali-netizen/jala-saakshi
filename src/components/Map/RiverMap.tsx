@@ -8,6 +8,13 @@ import { Maximize2 } from 'lucide-react';
 import { GEOJSON_URL, RIVERS_URL } from '../../config';
 import type { MonitoringLocation } from '../../utils/stations';
 import { LAKES_ATTRIBUTION, type Lake } from '../../services/lakes';
+import {
+  LAKE_CLASS_COLOUR,
+  NO_READING_COLOUR,
+  NO_READING_TEXT,
+  readingPopupHtml,
+  type LakeReadingsFile,
+} from '../../services/lakeReadings';
 import { getClassConfig } from '../../utils/waterQuality';
 import { formatMonth } from '../../utils/months';
 
@@ -23,6 +30,8 @@ interface RiverMapProps {
   panelOpen: boolean;
   /** Mapped Bengaluru lakes, drawn as their own layer. Null while the file loads. */
   lakes?: Lake[] | null;
+  /** July 2026 KSPCB lake readings, keyed by OSM id. */
+  lakeReadings?: LakeReadingsFile | null;
   showLakes?: boolean;
   onToggleLakes?: (next: boolean) => void;
   /** Dims the station pins so the gap layer reads clearly. */
@@ -223,14 +232,23 @@ function StationsLayer({ locations, selectedMonth, selectedId, onSelect, panelOp
 
 // ─── Lakes ───────────────────────────────────────────────────────────────────
 
-/** No reading: the same grey the legend uses for "No data". */
-const LAKE_STYLE: L.PathOptions = { color: '#475569', weight: 1, fillColor: '#64748b', fillOpacity: 0.45 };
-const LAKE_SELECTED: L.PathOptions = { color: '#0f766e', weight: 2.5, fillColor: '#0f766e', fillOpacity: 0.55 };
-/** The lake this project follows. */
-const LAKE_FEATURED: L.PathOptions = { color: '#be123c', weight: 2, fillColor: '#f43f5e', fillOpacity: 0.5 };
+const LAKE_SELECTED: L.PathOptions = { color: '#0f766e', weight: 3, fillColor: '#0f766e', fillOpacity: 0.55 };
 
-const styleFor = (lake: Lake, selected: boolean): L.PathOptions =>
-  selected ? LAKE_SELECTED : lake.featured ? LAKE_FEATURED : LAKE_STYLE;
+/**
+ * Tested lakes take the colour of their class; untested ones stay the grey the legend
+ * already uses for "No data". The class letter appears in the popup and the legend, so
+ * colour is never the only thing carrying the meaning.
+ */
+function styleFor(lake: Lake, selected: boolean, readings: LakeReadingsFile | null): L.PathOptions {
+  if (selected) return LAKE_SELECTED;
+  const reading = readings?.byOsmId[lake.osmId];
+  if (reading?.useClass) {
+    const c = LAKE_CLASS_COLOUR[reading.useClass];
+    return { color: c.stroke, weight: 1.5, fillColor: c.fill, fillOpacity: 0.6 };
+  }
+  if (lake.featured) return { color: '#be123c', weight: 2, fillColor: '#f43f5e', fillOpacity: 0.5 };
+  return { color: NO_READING_COLOUR.stroke, weight: 1, fillColor: NO_READING_COLOUR.fill, fillOpacity: 0.4 };
+}
 
 /**
  * Every mapped Bengaluru lake, drawn outside the marker cluster so they are never
@@ -241,11 +259,13 @@ const LAKES_ATTRIBUTION_HTML = `Lakes: ${LAKES_ATTRIBUTION}`;
 
 function LakesLayer({
   lakes,
+  readings,
   visible,
   selectedId,
   onSelect,
 }: {
   lakes: Lake[] | null;
+  readings: LakeReadingsFile | null;
   visible: boolean;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -262,14 +282,30 @@ function LakesLayer({
     const shapes = shapesRef.current;
 
     for (const lake of lakes) {
-      const shape = L.polygon(lake.rings, styleFor(lake, lake.id === selectedId))
+      const reading = readings?.byOsmId[lake.osmId];
+      const shape = L.polygon(lake.rings, styleFor(lake, lake.id === selectedId, readings))
         .bindTooltip(
-          `<strong>${esc(lake.name)}</strong><br/>No reading in KSPCB's monthly river reports`,
+          reading
+            ? `<strong>${esc(lake.name)}</strong><br/>Class ${esc(reading.useClass ?? '—')} · KSPCB, July 2026`
+            : `<strong>${esc(lake.name)}</strong><br/>${NO_READING_TEXT}`,
           { direction: 'top', sticky: true },
         )
+        // No popup here: clicking opens the detail panel, and two surfaces describing the
+        // same lake is how they came to disagree in the first place.
         .on('click', () => live.current.onSelect(lake.id))
         .addTo(group);
       shapes.set(lake.id, shape);
+    }
+
+    // Tested lakes we could not place on a polygon, shown where they were sampled.
+    for (const r of readings?.unmatched ?? []) {
+      const c = r.useClass ? LAKE_CLASS_COLOUR[r.useClass] : NO_READING_COLOUR;
+      L.circleMarker([r.lat, r.lng], { radius: 6, color: '#fff', weight: 2, fillColor: c.stroke, fillOpacity: 1 })
+        .bindTooltip(`<strong>${esc(r.kspcbName)}</strong><br/>Tested, not matched to a mapped lake`, {
+          direction: 'top',
+        })
+        .bindPopup(readingPopupHtml(r.kspcbName, r))
+        .addTo(group);
     }
 
     // The lake geometry is OpenStreetMap's, so credit it while the layer is shown.
@@ -280,15 +316,15 @@ function LakesLayer({
       map.removeLayer(group);
       shapes.clear();
     };
-  }, [lakes, visible, map]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [lakes, readings, visible, map]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Restyle on selection rather than rebuilding 340 polygons.
   useEffect(() => {
     if (!lakes) return;
     for (const lake of lakes) {
-      shapesRef.current.get(lake.id)?.setStyle(styleFor(lake, lake.id === selectedId));
+      shapesRef.current.get(lake.id)?.setStyle(styleFor(lake, lake.id === selectedId, readings));
     }
-  }, [selectedId, lakes]);
+  }, [selectedId, lakes, readings]);
 
   return null;
 }
@@ -305,7 +341,7 @@ function FeaturedLakePin({ lake, visible, onSelect }: { lake: Lake | null; visib
       icon: L.divIcon({
         className: 'wb-pin-wrap',
         html: `<div class="wb-pin"><span class="wb-pin-dot"></span>${esc(lake.name)}
-                 <small>no reading in KSPCB's monthly river reports</small></div>`,
+                 <small>Doddagubbi Lake</small></div>`,
         iconSize: [0, 0],
       }),
       zIndexOffset: 1000,
@@ -398,6 +434,7 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
         <StationsLayer {...props} />
         <LakesLayer
           lakes={props.lakes ?? null}
+          readings={props.lakeReadings ?? null}
           visible={props.showLakes ?? false}
           selectedId={props.selectedId}
           onSelect={props.onSelect}
@@ -457,7 +494,7 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
                    max-w-xs pointer-events-auto"
       >
         <div className="font-semibold text-slate-800 mb-1.5 flex items-center justify-between">
-          <span>Water Quality Scale</span>
+          <span>River stations</span>
           <span className="text-[10px] font-normal text-slate-500 uppercase tracking-wide">
             CPCB Classes
           </span>
@@ -481,6 +518,37 @@ export const RiverMap: React.FC<RiverMapProps> = (props) => {
             );
           })}
         </div>
+
+        {/* Lake key. The lake layer uses different hues from the station markers on
+            purpose: Class D and E are the only two in the lakes report and the station
+            palette puts them both in the orange-red range, which is hard to tell apart
+            and worse for colour-blind readers. The letter is always shown too. */}
+        {props.showLakes && (
+          <div className="mt-2 pt-2 border-t border-slate-100">
+            <div className="mb-1 flex items-center justify-between font-semibold text-slate-800">
+              <span>Lakes</span>
+              <span className="text-[10px] font-normal uppercase tracking-wide text-slate-500">KSPCB, Jul 2026</span>
+            </div>
+            <div className="flex flex-wrap gap-x-3 gap-y-1">
+              {(['D', 'E'] as const).map((c) => (
+                <span key={c} className="flex items-center gap-1.5">
+                  <i
+                    className="inline-block h-3 w-4 rounded-sm"
+                    style={{ background: LAKE_CLASS_COLOUR[c].fill, border: `1.5px solid ${LAKE_CLASS_COLOUR[c].stroke}` }}
+                  />
+                  <span className="text-[11px] text-slate-700">Class {c}</span>
+                </span>
+              ))}
+              <span className="flex items-center gap-1.5">
+                <i
+                  className="inline-block h-3 w-4 rounded-sm"
+                  style={{ background: NO_READING_COLOUR.fill, border: `1.5px solid ${NO_READING_COLOUR.stroke}` }}
+                />
+                <span className="text-[11px] text-slate-700">Not tested</span>
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* River-line key */}
         <div className="mt-2 pt-2 border-t border-slate-100 flex flex-col gap-1">

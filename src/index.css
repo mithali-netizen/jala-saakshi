@@ -340,3 +340,19 @@ a:hover > .device-float, a:hover .device-float { transform: translateY(-8px); }
 }
 .basemap-switch button:hover { color: #fff; }
 .basemap-switch button[aria-pressed='true'] { background: #0f766e; color: #fff; }
+
+/* Lake reading popups */
+.lr-pop { display: grid; gap: 0.3rem; min-width: 14rem; font-size: 0.78rem; }
+.lr-pop strong { font-size: 0.86rem; color: #0f172a; }
+.lr-pop p { margin: 0; color: #64748b; }
+.lr-pop dl { margin: 0.1rem 0 0; display: grid; gap: 0.15rem; }
+.lr-pop dl > div { display: flex; justify-content: space-between; gap: 0.75rem; }
+.lr-pop dt { color: #64748b; }
+.lr-pop dd { margin: 0; font-weight: 600; color: #0f172a; font-variant-numeric: tabular-nums; }
+.lr-pop em { margin-top: 0.2rem; font-style: normal; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #64748b; }
+.lr-class { justify-self: start; padding: 0.1rem 0.4rem; border-radius: 0.3rem; font-size: 0.68rem; font-weight: 700; color: #fff; }
+.lr-class-D { background: #0072B2; }
+.lr-class-E { background: #D55E00; }
+.lr-class-A { background: #117733; }
+.lr-class-B { background: #332288; }
+.lr-class-C { background: #999933; }

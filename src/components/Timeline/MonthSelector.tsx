@@ -9,12 +9,21 @@ interface MonthSelectorProps {
   onSelectMonth: (month: string) => void;
   /** 'bar' is the condensed form that sits in the dashboard top bar. */
   variant?: 'card' | 'bar';
+  /** Lets the page react to playback, e.g. by framing a region worth watching. */
+  onPlayingChange?: (playing: boolean) => void;
 }
 
 const PLAY_INTERVAL_MS = 1400;
 
-export const MonthSelector: React.FC<MonthSelectorProps> = ({ months, selectedMonth, onSelectMonth, variant = 'card' }) => {
+export const MonthSelector: React.FC<MonthSelectorProps> = ({ months, selectedMonth, onSelectMonth, variant = 'card', onPlayingChange }) => {
   const [playing, setPlaying] = useState(false);
+
+  // Report playback upward without making the parent own the timer.
+  const notify = useRef(onPlayingChange);
+  notify.current = onPlayingChange;
+  useEffect(() => {
+    notify.current?.(playing);
+  }, [playing]);
   const chipRefs = useRef(new Map<string, HTMLButtonElement>());
 
   const index = Math.max(0, months.indexOf(selectedMonth));

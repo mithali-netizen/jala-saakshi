@@ -6,6 +6,7 @@ import { useReports, type CitizenReport } from '../../services/reportStore';
 import { getClassConfig } from '../../utils/waterQuality';
 import { formatDay } from '../../utils/dates';
 import { LAKES_ATTRIBUTION, type Lake } from '../../services/lakes';
+import { NO_READING_TEXT } from '../../services/lakeReadings';
 import { hasValues } from '../../utils/stations';
 
 /**
@@ -96,7 +97,7 @@ export const MiniMap: React.FC<MiniMapProps> = ({ showStations = false, seeded =
     if (lakes) {
       for (const lake of lakes) {
         L.polygon(lake.rings, lake.featured ? LAKE_FEATURED : LAKE_STYLE)
-          .bindTooltip(`<strong>${esc(lake.name)}</strong><br/>No reading in KSPCB's monthly river reports`, {
+          .bindTooltip(`<strong>${esc(lake.name)}</strong><br/>${NO_READING_TEXT}`, {
             direction: 'top',
             sticky: true,
           })

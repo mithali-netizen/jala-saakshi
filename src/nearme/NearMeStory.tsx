@@ -4,8 +4,9 @@ import 'leaflet/dist/leaflet.css';
 import { ArrowLeft, ArrowRight, Megaphone, X } from 'lucide-react';
 import { useData } from '../context/DataContext';
 import { LAKES_ATTRIBUTION } from '../services/lakes';
+import { LAKE_CLASS_COLOUR, NO_READING_COLOUR } from '../services/lakeReadings';
 import { BASEMAPS, BASEMAP_ORDER, loadBasemap, saveBasemap, type BasemapId } from '../services/basemaps';
-import { DODDAGUBBI, FIRST_DEAD_FISH, NEWS_READING } from '../services/doddagubbi';
+import { DODDAGUBBI, FIRST_DEAD_FISH, LAKE_READING } from '../services/doddagubbi';
 import { formatDay } from '../utils/dates';
 import { useGeotag } from '../services/geotag';
 import {
@@ -14,7 +15,6 @@ import {
   NEARBY_RADIUS_KM,
   computeFacts,
   formatKm,
-  formatMonth,
   type TourFacts,
 } from './steps';
 
@@ -33,7 +33,7 @@ interface Step {
 }
 
 export default function NearMeStory() {
-  const { lakes, locations, stats, isLoading } = useData();
+  const { lakes, locations, stats, isLoading, lakeReadings, lakeStats } = useData();
   const geo = useGeotag();
   const [step, setStep] = useState(0);
   const [basemap, setBasemap] = useState<BasemapId>(loadBasemap);
@@ -50,9 +50,9 @@ export default function NearMeStory() {
   const settled = geo.status === 'done' || geo.status === 'unavailable';
 
   const facts: TourFacts | null = useMemo(
-    () => (lakes && locations.length > 0 ? computeFacts(origin, located, lakes, locations) : null),
+    () => (lakes && locations.length > 0 ? computeFacts(origin, located, lakes, locations, lakeReadings) : null),
     // origin is derived from geo.fix, so that is the real dependency
-    [lakes, locations, geo.fix, located, origin],
+    [lakes, locations, geo.fix, located, origin, lakeReadings],
   );
 
   // ── map ────────────────────────────────────────────────────────────────────
@@ -116,12 +116,21 @@ export default function NearMeStory() {
       for (const n of facts.nearby) {
         L.polygon(n.lake.rings, {
           // Satellite imagery swallows a grey outline, so brighten it there.
-          color: onImagery ? '#f8fafc' : n.hasReading ? '#0f766e' : '#475569',
+          color: onImagery
+            ? '#f8fafc'
+            : n.reading?.useClass
+              ? LAKE_CLASS_COLOUR[n.reading.useClass].stroke
+              : NO_READING_COLOUR.stroke,
           weight: onImagery ? 2.5 : 1.5,
-          fillColor: n.hasReading ? '#14b8a6' : '#64748b',
+          fillColor: n.reading?.useClass ? LAKE_CLASS_COLOUR[n.reading.useClass].fill : NO_READING_COLOUR.fill,
           fillOpacity: onImagery ? (dim ? 0.18 : 0.3) : dim ? 0.3 : 0.5,
         })
-          .bindTooltip(`<strong>${n.lake.name}</strong><br/>${formatKm(n.km)} away`, { direction: 'top' })
+          .bindTooltip(
+          `<strong>${n.lake.name}</strong><br/>${formatKm(n.km)} away${
+            n.reading?.useClass ? ` · Class ${n.reading.useClass}, KSPCB July 2026` : ' · not in the July 2026 report'
+          }`,
+          { direction: 'top' },
+        )
           .addTo(group);
       }
       map.attributionControl.addAttribution(`Lakes: ${LAKES_ATTRIBUTION}`);
@@ -141,12 +150,28 @@ export default function NearMeStory() {
         map.flyTo([facts.origin.lat, facts.origin.lng], 14, { duration: 1.1 });
         break;
       case 1:
-      case 2:
         you();
-        drawNearby(step === 2);
+        drawNearby(false);
         fitNearby();
         break;
-      case 3: {
+      case 2: {
+        you();
+        drawNearby(true);
+        if (facts.nearestTested) {
+          const t = facts.nearestTested;
+          L.polygon(t.lake.rings, { color: '#0f766e', weight: 3, fillColor: '#14b8a6', fillOpacity: 0.55 }).addTo(group);
+          map.flyToBounds(
+            L.latLngBounds([[facts.origin.lat, facts.origin.lng], [t.lake.lat, t.lake.lng]]).pad(0.5),
+            { duration: 1.2, maxZoom: 15 },
+          );
+        }
+        break;
+      }
+      case 3:
+        you();
+        drawNearby(false);
+        break;
+      case 4: {
         you();
         drawNearby(true);
         if (facts.nearest) {
@@ -163,10 +188,6 @@ export default function NearMeStory() {
         }
         break;
       }
-      case 4:
-        you();
-        drawNearby(true);
-        break;
       case 5:
       case 6:
         L.polygon(DODDAGUBBI.outline, {
@@ -202,7 +223,10 @@ export default function NearMeStory() {
   const steps: Step[] = useMemo(() => {
     if (!facts) return [];
     const n = facts.nearby.length;
+    const testedNearby = n - facts.withoutReading;
     const list = facts.nearby.slice(0, 4).map((x) => `${x.lake.name} (${formatKm(x.km)})`).join(', ');
+    const tested = facts.nearestTested;
+    const r = tested?.reading ?? null;
     const nearest = facts.nearest;
 
     return [
@@ -221,89 +245,98 @@ export default function NearMeStory() {
         ),
       },
       {
-        title: n === 0 ? `No mapped lakes within ${NEARBY_RADIUS_KM} km` : `${n} lake${n === 1 ? '' : 's'} within ${NEARBY_RADIUS_KM} km`,
+        title:
+          n === 0 ? `No mapped lakes within ${NEARBY_RADIUS_KM} km` : `${n} lake${n === 1 ? '' : 's'} within ${NEARBY_RADIUS_KM} km`,
         body:
           n === 0 ? (
             <>No water body in the OpenStreetMap lake layer falls within {NEARBY_RADIUS_KM} km of this point.</>
           ) : (
             <>
               The closest {n === 1 ? 'is' : 'are'} {list}
-              {n > 4 ? `, and ${n - 4} more` : ''}. Shapes and names come from OpenStreetMap.
+              {n > 4 ? `, and ${n - 4} more` : ''}.{' '}
+              {testedNearby === 0
+                ? `${n === 1 ? 'It was' : 'None of them was'} not tested by KSPCB in July 2026.`
+                : n === 1
+                  ? 'It was tested by KSPCB in July 2026.'
+                  : `${testedNearby} of them ${testedNearby === 1 ? 'was' : 'were'} tested by KSPCB in July 2026.`}
             </>
           ),
         source: 'Lake shapes: OpenStreetMap contributors',
       },
       {
-        title:
-          facts.withoutReading === n
-            ? `None of these ${n === 1 ? 'has' : 'have'} a reading`
-            : `${facts.withoutReading} of ${n} have no reading`,
-        body: (
+        title: tested ? `What the Board found at ${tested.lake.name}` : 'No tested lake nearby',
+        body: tested ? (
           <>
-            KSPCB's monthly series covers {stats.locations} river monitoring points. We counted how many of the lakes
-            near you have a monitoring point close enough to be measuring them: {n - facts.withoutReading}. Across the
-            whole city, {stats.lakesMapped ?? '—'} lakes are mapped and {stats.lakesInReports} appear in that series.
-          </>
-        ),
-        source: 'Our extraction of KSPCB monthly river reports',
-      },
-      {
-        title: nearest ? `Nearest monitoring point: ${formatKm(nearest.km)} away` : 'No monitoring point found',
-        body: nearest ? (
-          <>
-            The closest point in the published series is {nearest.location.name}, on the {nearest.location.river}.
-            {nearest.month ? (
-              <>
-                {' '}Its {formatMonth(nearest.month)} reading was dissolved oxygen {nearest.do ?? '—'} mg/L and BOD{' '}
-                {nearest.bod ?? '—'} mg/L{nearest.waterClass ? `, Class ${nearest.waterClass}` : ''}.
-              </>
-            ) : (
-              <> No reading is recorded there.</>
-            )}{' '}
-            It measures a river, not any of these lakes. It is the nearest official number, not a number about the
-            lakes near you — the two are not connected by anything we can show.
+            {formatKm(tested.km)} from you. KSPCB sampled it in July 2026 and recorded dissolved oxygen{' '}
+            <b>{r?.do_mg_l ?? '—'} mg/L</b>, BOD <b>{r?.bod_mg_l ?? '—'} mg/L</b>, total coliform{' '}
+            <b>{r?.total_coliform?.toLocaleString() ?? '—'} MPN/100 ml</b>, and placed it in{' '}
+            <b>Class {r?.useClass ?? '—'}</b>. Fish need dissolved oxygen above about 4 mg/L.
           </>
         ) : (
-          <>No monitoring point could be matched.</>
+          <>No lake near this point appears in the July 2026 report, so there is nothing measured to show you.</>
         ),
-        source: 'Our extraction of KSPCB monthly river reports',
+        source: 'KSPCB Bengaluru lakes report, July 2026',
       },
       {
-        title: 'What the Board’s classes mean',
+        title: 'What that class means',
         body: (
-          <ul className="mt-1 space-y-1">
-            {CLASS_LEGEND.map((c) => (
-              <li key={c.code} className={c.code === 'E' ? 'font-semibold text-rose-200' : ''}>
-                <b className="inline-block w-6">{c.code}</b> {c.text}
-              </li>
-            ))}
-          </ul>
+          <>
+            <ul className="mt-1 space-y-1">
+              {CLASS_LEGEND.map((c) => (
+                <li key={c.code} className={r?.useClass === c.code ? 'font-semibold text-teal-200' : ''}>
+                  <b className="inline-block w-6">{c.code}</b> {c.text}
+                  {r?.useClass === c.code ? '  ← this lake' : ''}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2 text-slate-300">
+              These are the uses the water is fit for, not a verdict on anyone in particular.
+            </p>
+          </>
         ),
         source: 'KSPCB August 2026 report, p. 3, quoted verbatim',
       },
       {
-        title: 'Doddagubbi Lake, October 2026',
+        title:
+          lakeStats && stats.lakesMapped !== null
+            ? `${lakeStats.withoutReading(stats.lakesMapped)} mapped lakes have no reading at all`
+            : 'Many lakes have no reading at all',
         body: (
           <>
-            Thousands of dead fish were reported at Doddagubbi from {formatDay(FIRST_DEAD_FISH)}. The last readings we
-            have for it are from {NEWS_READING.month}, quoted second-hand: Class {NEWS_READING.waterClass}, dissolved
-            oxygen {NEWS_READING.do} mg/L, BOD {NEWS_READING.bod} mg/L, coliform{' '}
-            {NEWS_READING.totalColiform.toLocaleString()} MPN/100 ml. The lake is not in the monthly series.
+            {lakeStats ? `${lakeStats.tested} lakes were tested for that report. ` : ''}
+            {lakeStats && stats.lakesMapped !== null
+              ? `The other ${lakeStats.withoutReading(stats.lakesMapped)} of the ${stats.lakesMapped} lakes mapped here have no figure in it. `
+              : ''}
+            The Board&rsquo;s monthly series covers rivers, not lakes
+            {nearest ? `; the nearest river point is ${formatKm(nearest.km)} away` : ''}. A lake with no reading is not
+            a lake that is fine — it is a lake nobody measured.
           </>
         ),
-        source: 'Bangalore Mirror, 5 Oct 2026',
+        source: 'KSPCB lakes report July 2026, and our extraction of the monthly river reports',
+      },
+      {
+        title: 'When it goes wrong: Doddagubbi, October 2026',
+        body: (
+          <>
+            Thousands of dead fish were reported at Doddagubbi from {formatDay(FIRST_DEAD_FISH)}. Three months earlier
+            the Board had recorded it as Class {LAKE_READING.waterClass}, dissolved oxygen {LAKE_READING.do} mg/L, BOD{' '}
+            {LAKE_READING.bod} mg/L. The reading was on the record before the fish died.
+          </>
+        ),
+        source: 'Fish kill: Bangalore Mirror, 5 Oct 2026. Reading: KSPCB lakes report, July 2026',
       },
       {
         title: 'Report what you see',
         body: (
           <>
-            If something looks wrong at a lake near you — dead fish, froth, a smell — a photo and a date are worth more
-            than nothing on record. The report drafts a complaint you send yourself.
+            A reading is a single day. You are there the rest of the year. If something looks wrong at a lake near you —
+            dead fish, froth, a smell — a photo and a date are worth more than nothing on record. The report drafts a
+            complaint you send yourself.
           </>
         ),
       },
     ];
-  }, [facts, stats]);
+  }, [facts, stats, lakeStats]);
 
   const current = steps[step];
   const reportHref = facts?.nearby[0]

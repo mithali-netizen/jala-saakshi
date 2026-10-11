@@ -24,13 +24,14 @@ const BENGALURU = L.latLngBounds(L.latLng(12.7, 77.2), L.latLng(13.35, 77.95));
 const LAKES_VIEW = L.latLngBounds(L.latLng(12.9, 77.55), L.latLng(13.11, 77.76));
 
 export const App: React.FC = () => {
-  const { locations: allLocations, months, stats, selectedMonth, setSelectedMonth, isLoading, error, reload, lakes } =
+  const { locations: allLocations, months, stats, selectedMonth, setSelectedMonth, isLoading, error, reload, lakes, lakeReadings, lakeStats } =
     useData();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [riverFilter, setRiverFilter] = useState('all');
   const [focus, setFocus] = useState<Focus>('points');
   const [showLakes, setShowLakes] = useState(true);
+  const [playing, setPlaying] = useState(false);
 
   const rivers = useMemo(() => [...new Set(allLocations.map((l) => l.river))].sort(), [allLocations]);
 
@@ -57,8 +58,8 @@ export const App: React.FC = () => {
   const gapFocus = focus === 'lakes' || focus === 'complaints';
   // Lakes are a few hundred metres across, so their view has to be close enough to read.
   const fitTo = useMemo(
-    () => (gapFocus ? LAKES_VIEW : focus === 'bengaluru' ? BENGALURU : KARNATAKA),
-    [gapFocus, focus],
+    () => (playing ? BENGALURU : gapFocus ? LAKES_VIEW : focus === 'bengaluru' ? BENGALURU : KARNATAKA),
+    [gapFocus, focus, playing],
   );
 
   const handleFocus = (next: Focus) => {
@@ -88,6 +89,7 @@ export const App: React.FC = () => {
                 months={months}
                 selectedMonth={selectedMonth}
                 onSelectMonth={setSelectedMonth}
+                onPlayingChange={setPlaying}
               />
             </div>
           )}
@@ -183,6 +185,7 @@ export const App: React.FC = () => {
               listed={stats.listedIn(selectedMonth)}
               sampled={stats.sampledIn(selectedMonth)}
               openComplaints={openCount}
+              lakeStats={lakeStats}
               selectedMonth={selectedMonth}
             />
 
@@ -195,11 +198,17 @@ export const App: React.FC = () => {
                   onSelect={setSelectedId}
                   panelOpen={panelOpen}
                   lakes={lakes}
+                  lakeReadings={lakeReadings}
                   showLakes={showLakes}
                   onToggleLakes={setShowLakes}
                   dimStations={gapFocus}
                   fitTo={fitTo}
                 />
+                {playing && showLakes && lakeStats && (
+                  <p className="pointer-events-none absolute bottom-3 left-1/2 z-[500] -translate-x-1/2 rounded-full bg-slate-900/85 px-4 py-1.5 text-xs font-medium text-white backdrop-blur">
+                    River stations change with the month. Lake colours are the July 2026 survey and do not move.
+                  </p>
+                )}
                 {panelOpen && (
                   <div className="pointer-events-none absolute inset-x-2 bottom-2 z-[500] flex max-h-[62%] lg:inset-x-auto lg:bottom-3 lg:right-3 lg:top-3 lg:max-h-none lg:w-[400px]">
                     <div className="pointer-events-auto flex max-h-full w-full">
@@ -228,6 +237,7 @@ export const App: React.FC = () => {
                           <LakePanel
                             lake={selectedLake}
                             locations={allLocations}
+                            lakeReading={lakeReadings?.byOsmId[selectedLake.osmId] ?? null}
                             onClose={() => setSelectedId(null)}
                             onReport={(l) => {
                               window.location.hash = `#/app/report?lake=${encodeURIComponent(l.id)}`;

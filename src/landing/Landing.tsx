@@ -4,11 +4,13 @@ import {
   ArrowUpRight,
   Bell,
   Building2,
+  Check,
   Cloud,
   Droplet,
   FileText,
   Languages,
   Map as MapIcon,
+  MapPin,
   ScanSearch,
   Smartphone,
   Users,
@@ -18,6 +20,7 @@ import GapMap from '../story/components/GapMap';
 import { formatMonth } from '../utils/months';
 import { APP_NAME } from '../brand';
 import { SentinelStrip } from './SentinelStrip';
+import { LAKE_CLASS_COLOUR } from '../services/lakeReadings';
 
 /* ── Motion helpers ─────────────────────────────────────────────────────────── */
 
@@ -370,7 +373,7 @@ const AWS_SERVICES: { name: string; role: string; body: string; status: Status }
 /* ── Page ───────────────────────────────────────────────────────────────────── */
 
 export default function Landing() {
-  const { stats, locations, isLoading, error } = useData();
+  const { stats, locations, isLoading, error, lakeStats } = useData();
   const ready = !isLoading && !error && locations.length > 0;
   const mapApi = useRef<{ karnataka: () => void; bengaluru: () => void } | null>(null);
   const [scrolled, setScrolled] = useState(false);
@@ -452,41 +455,28 @@ export default function Landing() {
                   {APP_NAME} <span className="ml-2 font-medium text-sky-300/80">· ಜಲ ಸಾಕ್ಷಿ</span>
                 </p>
                 <h1 className="font-display mt-6 text-[2.5rem] font-extrabold leading-[1.05] tracking-tight sm:text-6xl lg:text-[4.2rem]">
-                  <CountUp to={149} /> Bengaluru lakes tested.{' '}
-                  <span className="bg-gradient-to-r from-rose-300 to-orange-200 bg-clip-text text-transparent">
-                    None of them clean enough to bathe in.
-                  </span>
+                  {lakeStats ? (
+                    <>
+                      <CountUp to={lakeStats.tested} /> Bengaluru lakes tested.{' '}
+                      <span className="bg-gradient-to-r from-rose-300 to-orange-200 bg-clip-text text-transparent">
+                        <CountUp to={lakeStats.byClass.E ?? 0} /> came back Class E.
+                      </span>
+                    </>
+                  ) : (
+                    <span className="inline-block h-28 w-full max-w-2xl animate-pulse rounded bg-white/10" />
+                  )}
                 </h1>
               </Reveal>
               <Reveal delay={120}>
                 <p className="mt-7 max-w-2xl text-lg leading-relaxed text-slate-200 sm:text-xl">
-                  KSPCB’s own sampling, April–November 2025: zero lakes in Class A, B or C. About four in ten sit in
-                  Class E every month, the Board’s designation for irrigation, industrial cooling and waste disposal.
+                  {/* The Board's own words for Class E; the gloss is theirs, not ours. */}
+                  That is the Board’s designation for irrigation, industrial cooling and controlled waste disposal.
+                  {lakeStats ? ` ${lakeStats.byClass.D ?? 0} are Class D.` : ''}
+                  {lakeStats && stats.lakesMapped !== null
+                    ? ` A further ${lakeStats.withoutReading(stats.lakesMapped)} of the ${stats.lakesMapped} lakes mapped here have no reading at all.`
+                    : ''}
                 </p>
-                <Source dark>KSPCB MINARS data, reported by News Karnataka, Feb 2026.</Source>
-              </Reveal>
-
-              <Reveal delay={220}>
-                <div className="mt-9 rounded-2xl border border-white/10 bg-white/[0.06] p-6 backdrop-blur-sm">
-                  <p className="font-display max-w-2xl text-xl font-semibold leading-snug text-white sm:text-2xl">
-                    {ready ? (
-                      <>
-                        KSPCB’s monthly river reports cover {stats.locations} monitoring points on {stats.rivers} rivers.{' '}
-                        <span className="text-rose-300">None of them is a lake.</span>
-                      </>
-                    ) : (
-                      <span className="inline-block h-14 w-full max-w-xl animate-pulse rounded bg-white/10" />
-                    )}
-                  </p>
-                  {ready && (
-                    <p className="mt-3 max-w-2xl text-base leading-relaxed text-slate-300">
-                      Doddagubbi Lake in Bengaluru, where news coverage reports thousands of dead fish in early October
-                      2026, is not one of them. The nearest monitoring point is {stats.nearestToDoddagubbi.km.toFixed(1)}{' '}
-                      km away, on the {stats.nearestToDoddagubbi.river}.
-                    </p>
-                  )}
-                  <Source dark>Our extraction of KSPCB monthly river reports.</Source>
-                </div>
+                <Source dark>KSPCB Bengaluru lakes report, July 2026.</Source>
               </Reveal>
 
               <Reveal delay={320}>
@@ -538,12 +528,19 @@ export default function Landing() {
                 />
                 <Tile value={stats.rivers} label="Rivers" note="Spelling variants across the PDFs merged" delay={80} />
                 <Tile
-                  value={stats.lakesInReports}
-                  label="Lakes in this series"
+                  value={lakeStats ? lakeStats.tested : '—'}
+                  label="Lakes tested, July 2026"
                   note={
-                    stats.lakesMapped === null
-                      ? 'No station name, river or stretch reads as a lake, kere or tank'
-                      : `None of the ${stats.lakesMapped} mapped Bengaluru lakes appears in it`
+                    lakeStats
+                      ? `${Object.entries(lakeStats.byClass)
+                          .sort(([a], [b]) => a.localeCompare(b))
+                          .map(([c, n]) => `${n} Class ${c}`)
+                          .join(', ')}${
+                          stats.lakesMapped === null
+                            ? ''
+                            : ` · ${lakeStats.withoutReading(stats.lakesMapped)} of ${stats.lakesMapped} mapped lakes untested`
+                        }`
+                      : 'Loading the July 2026 lakes report…'
                   }
                   tone="alert"
                   delay={160}
@@ -606,6 +603,81 @@ export default function Landing() {
               <SentinelStrip />
             </div>
           </Reveal>
+        </section>
+
+        {/* Make it personal: the lakes near the reader */}
+        <section id="near-you" className="scroll-mt-20 border-y border-teal-100 bg-teal-50/60 py-20">
+          <div className="shell grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:items-center">
+            <Reveal>
+              <Eyebrow>Near you</Eyebrow>
+              <H2>Which of these lakes is the one you walk past?</H2>
+              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-slate-700">
+                City-wide numbers are easy to scroll past. Start from where you are: the lakes within three kilometres,
+                what the Board recorded at the nearest one it tested, and what that class actually means. Seven short
+                steps on a map.
+              </p>
+              <ul className="mt-6 grid gap-2 text-[15px] text-slate-700 sm:grid-cols-2">
+                {[
+                  'Lakes within 3 km of you, named and measured',
+                  'The nearest tested lake’s oxygen, BOD and coliform',
+                  'What its class means, in the Board’s own words',
+                  'How many lakes nobody measured at all',
+                ].map((line) => (
+                  <li key={line} className="flex gap-2">
+                    <Check className="mt-1 h-4 w-4 shrink-0 text-teal-700" aria-hidden />
+                    <span>{line}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <a href="#/near-me" className="btn btn-lg btn-primary group no-underline">
+                  <MapPin className="h-5 w-5" aria-hidden /> Discover the lakes near you
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden />
+                </a>
+                <span className="text-sm text-slate-600">
+                  Uses your location only in your browser. Works without it too.
+                </span>
+              </div>
+            </Reveal>
+
+            <Reveal delay={120}>
+              <div className="rounded-3xl border border-teal-200 bg-white p-6 shadow-xl shadow-teal-900/5">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-500">In the July 2026 report</p>
+                <p className="font-display mt-2 text-5xl font-bold leading-none tracking-tight text-slate-900">
+                  {lakeStats ? lakeStats.tested : '—'}
+                </p>
+                <p className="mt-2 text-sm text-slate-700">Bengaluru lakes tested by KSPCB</p>
+                <div className="mt-4 space-y-1.5 text-sm text-slate-700">
+                  {lakeStats &&
+                    Object.entries(lakeStats.byClass)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([cls, count]) => (
+                        <div key={cls} className="flex items-center gap-2">
+                          <i
+                            className="inline-block h-3 w-4 rounded-sm"
+                            style={{
+                              background: LAKE_CLASS_COLOUR[cls]?.fill,
+                              border: `1.5px solid ${LAKE_CLASS_COLOUR[cls]?.stroke}`,
+                            }}
+                          />
+                          <span>
+                            <b>{count}</b> in Class {cls}
+                          </span>
+                        </div>
+                      ))}
+                  {lakeStats && stats.lakesMapped !== null && (
+                    <div className="flex items-center gap-2 border-t border-slate-100 pt-2 text-slate-600">
+                      <i className="inline-block h-3 w-4 rounded-sm border-[1.5px] border-slate-400 bg-slate-300" />
+                      <span>
+                        <b>{lakeStats.withoutReading(stats.lakesMapped)}</b> mapped lakes with no reading
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <SourceChip>KSPCB Bengaluru lakes report, July 2026</SourceChip>
+              </div>
+            </Reveal>
+          </div>
         </section>
 
         {/* This keeps happening */}
@@ -959,7 +1031,7 @@ function Tile({
   tone = 'default',
   delay = 0,
 }: {
-  value: number;
+  value: number | string;
   label: string;
   note: string;
   tone?: 'default' | 'alert';
@@ -973,7 +1045,7 @@ function Tile({
         }`}
       >
         <div className={`font-display text-5xl font-bold leading-none tracking-tight ${tone === 'alert' ? 'text-rose-600' : 'text-slate-900'}`}>
-          <CountUp to={value} />
+          {typeof value === 'number' ? <CountUp to={value} /> : value}
         </div>
         <div className="mt-3 text-[15px] font-semibold text-slate-900">{label}</div>
         <div className="mt-1 text-[13px] leading-snug text-slate-500">{note}</div>

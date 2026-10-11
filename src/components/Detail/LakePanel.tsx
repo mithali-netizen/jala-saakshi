@@ -4,6 +4,7 @@ import type { Lake } from '../../services/lakes';
 import type { MonitoringLocation } from '../../utils/stations';
 import { hasValues } from '../../utils/stations';
 import { formatMonth } from '../../utils/months';
+import { LAKE_CLASS_COLOUR, NO_READING_TEXT, type LakeReading } from '../../services/lakeReadings';
 
 /**
  * Any mapped lake other than the featured one.
@@ -29,9 +30,11 @@ function nearest(lake: Lake, locations: MonitoringLocation[]) {
 export const LakePanel: React.FC<{
   lake: Lake;
   locations: MonitoringLocation[];
+  /** This lake's July 2026 KSPCB reading, when it was one of those tested. */
+  lakeReading?: LakeReading | null;
   onClose: () => void;
   onReport: (lake: Lake) => void;
-}> = ({ lake, locations, onClose, onReport }) => {
+}> = ({ lake, locations, lakeReading, onClose, onReport }) => {
   const near = useMemo(() => nearest(lake, locations), [lake, locations]);
   const lastReal = near && [...near.location.months].reverse().find((m) => hasValues(near.location.byMonth.get(m)!));
   const reading = lastReal ? near.location.byMonth.get(lastReal)! : null;
@@ -63,17 +66,56 @@ export const LakePanel: React.FC<{
       </header>
 
       <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
-        <div className="rounded-xl border border-slate-300 bg-slate-50 p-3">
-          <div className="text-sm font-bold text-slate-900">No reading in KSPCB's monthly river reports</div>
-          <p className="mt-1 text-xs leading-relaxed text-slate-600">
-            This lake has no dissolved oxygen, BOD or coliform figure in the series this dashboard reads. That is true
-            of every mapped lake here, not just this one.
-          </p>
-        </div>
+        {lakeReading ? (
+          <div className="rounded-xl border border-slate-300 bg-white p-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Tested July 2026</h3>
+              {lakeReading.useClass && (
+                <span
+                  className="rounded px-2 py-0.5 text-[11px] font-bold text-white"
+                  style={{ background: LAKE_CLASS_COLOUR[lakeReading.useClass].stroke }}
+                >
+                  Class {lakeReading.useClass}
+                </span>
+              )}
+            </div>
+            <dl className="mt-2 space-y-1 text-xs">
+              {[
+                ['Dissolved oxygen', lakeReading.do_mg_l, ' mg/L'],
+                ['BOD', lakeReading.bod_mg_l, ' mg/L'],
+                ['Total coliform', lakeReading.total_coliform, ' MPN/100ml'],
+                ['Fecal coliform', lakeReading.fecal_coliform, ' MPN/100ml'],
+                ['pH', lakeReading.ph, ''],
+              ].map(([label, value, unit]) => (
+                <div key={String(label)} className="flex justify-between gap-3">
+                  <dt className="text-slate-600">{label}</dt>
+                  <dd className="font-semibold tabular-nums text-slate-900">
+                    {value === null || value === undefined ? '—' : `${Number(value).toLocaleString()}${unit}`}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-2 text-[11px] text-slate-500">
+              KSPCB Bengaluru lakes report, July 2026
+              {lakeReading.kspcbName !== lake.name ? ` · listed there as “${lakeReading.kspcbName}”` : ''}. One survey,
+              not a monthly series.
+            </p>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-slate-300 bg-slate-50 p-3">
+            <div className="text-sm font-bold text-slate-900">{NO_READING_TEXT}</div>
+            <p className="mt-1 text-xs leading-relaxed text-slate-600">
+              This lake was not among those tested for that report, and it has no figure in the monthly river series
+              either.
+            </p>
+          </div>
+        )}
 
         {near && (
           <div>
-            <h3 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">Nearest monitoring point</h3>
+            <h3 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">
+              Nearest river monitoring point
+            </h3>
             <p className="text-sm font-semibold text-slate-900">{near.location.name}</p>
             <p className="mt-0.5 text-xs text-slate-600">
               {near.km.toFixed(1)} km away

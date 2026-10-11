@@ -31,11 +31,22 @@ export const REPORTED_TIMELINE: { date: string; what: string }[] = [
   { date: '2026-10-05', what: 'Thousands of dead fish reported' },
 ];
 
-/** A July 2026 KSPCB reading for the lake, quoted second-hand in news coverage. */
-export const NEWS_READING = {
+/**
+ * The lake's July 2026 reading, from the KSPCB Bengaluru lakes report itself.
+ *
+ * This was previously carried as a figure quoted second-hand in news coverage, with BOD
+ * recorded as 22. That was wrong: 22 is the nitrate-N value. The report gives BOD as 7.
+ * The Bangalore Mirror citation now belongs only to the fish-kill event, not to these
+ * numbers.
+ */
+export const LAKE_READING = {
   month: 'July 2026',
   waterClass: 'E' as const,
   do: 3,
-  bod: 22,
+  bod: 7,
+  nitrateN: 22,
+  ph: 8.2,
+  fecalColiform: 790,
   totalColiform: 5400,
+  source: 'KSPCB Bengaluru lakes report, July 2026',
 };

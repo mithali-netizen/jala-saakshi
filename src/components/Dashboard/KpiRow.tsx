@@ -2,6 +2,7 @@ import React from 'react';
 import { formatMonth } from '../../utils/months';
 import type { Stats } from '../../services/stats';
 import { OPEN_AFTER_DAYS } from '../../services/tracker';
+import type { LakeReadingStats } from '../../services/lakeReadings';
 
 /** Which tile is active. Drives the map layers and the lists below it. */
 export type Focus = 'points' | 'rivers' | 'lakes' | 'bengaluru' | 'complaints';
@@ -16,6 +17,8 @@ interface KpiRowProps {
   sampled: number;
   openComplaints: number;
   selectedMonth: string;
+  /** July 2026 lake report; null until it loads. */
+  lakeStats: LakeReadingStats | null;
 }
 
 interface Tile {
@@ -28,7 +31,7 @@ interface Tile {
   demo?: boolean;
 }
 
-export const KpiRow: React.FC<KpiRowProps> = ({ stats, focus, onFocus, listed, sampled, openComplaints, selectedMonth }) => {
+export const KpiRow: React.FC<KpiRowProps> = ({ stats, focus, onFocus, listed, sampled, openComplaints, selectedMonth, lakeStats }) => {
   const tiles: Tile[] = [
     {
       key: 'points',
@@ -47,12 +50,18 @@ export const KpiRow: React.FC<KpiRowProps> = ({ stats, focus, onFocus, listed, s
     },
     {
       key: 'lakes',
-      value: String(stats.lakesInReports),
-      label: "Lakes in KSPCB's monthly river reports",
-      note:
-        stats.lakesMapped === null
-          ? 'None of the mapped Bengaluru lakes appears in this series'
-          : `None of the ${stats.lakesMapped} mapped Bengaluru lakes appears in this series`,
+      value: lakeStats ? String(lakeStats.tested) : '—',
+      label: 'Lakes tested, July 2026',
+      note: lakeStats
+        ? `${Object.entries(lakeStats.byClass)
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([c, n]) => `${n} Class ${c}`)
+            .join(', ')}${
+            stats.lakesMapped === null
+              ? ''
+              : ` · ${lakeStats.withoutReading(stats.lakesMapped)} of ${stats.lakesMapped} mapped lakes untested`
+          }`
+        : 'Loading the July 2026 lakes report…',
       alert: true,
     },
     {

@@ -1,4 +1,5 @@
 import { useData } from "../../context/DataContext";
+import { lakeCoverageSentence } from "../../services/lakeReadings";
 import { useRef } from "react";
 import GapMap from "../components/GapMap";
 import { Card, SourceTag, Stat } from "../components/ui";
@@ -14,7 +15,7 @@ const LEGEND: [string, string][] = [
 ];
 
 export default function Home() {
-  const { stats } = useData();
+  const { stats, lakeStats } = useData();
   const api = useRef<{ karnataka: () => void; bengaluru: () => void } | null>(null);
   const chip =
     "rounded-full border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-xs hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-brand";
@@ -24,13 +25,13 @@ export default function Home() {
       <header className="max-w-3xl">
         <p className="text-xs font-bold uppercase tracking-widest text-red-700">The monitoring gap</p>
         <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-ink sm:text-4xl">
-          KSPCB's monthly river reports cover {stats.locations} monitoring points on {stats.rivers} rivers.{" "}
+          KSPCB's monthly <b>river</b> reports cover {stats.locations} monitoring points on {stats.rivers} rivers.{" "}
           <span className="text-red-700">None of them is a lake.</span>
         </h1>
         <p className="mt-3 text-base leading-relaxed text-slate-700">
-          Doddagubbi Lake in Bengaluru, where news coverage reports thousands of dead fish in early October 2026, is not
-          one of them. The nearest monitoring point is {stats.nearestToDoddagubbi.km.toFixed(1)} km away, on the{" "}
-          {stats.nearestToDoddagubbi.river}.
+          Lakes are reported separately, and less often.{" "}
+          {lakeStats ? lakeCoverageSentence(lakeStats, stats.lakesMapped) : ""} Doddagubbi Lake, where news coverage
+          reports thousands of dead fish in early October 2026, was one of those tested.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <a href="#/lake" className="btn btn-primary">See what happened at Doddagubbi</a>
@@ -42,12 +43,19 @@ export default function Home() {
         <Stat value={stats.locations} label="Monitoring points" note={`${stats.stationCodes} station codes over ${stats.months.length} monthly reports, ${formatMonth(stats.firstMonth)} to ${formatMonth(stats.lastMonth)}`} />
         <Stat value={stats.rivers} label="Rivers" note="Spelling variants across the PDFs merged" />
         <Stat
-          value={stats.lakesInReports}
-          label="Lakes in this series"
+          value={lakeStats ? lakeStats.tested : '—'}
+          label="Lakes tested, July 2026"
           note={
-            stats.lakesMapped === null
-              ? 'No station name, river or stretch reads as a lake, kere or tank'
-              : `None of the ${stats.lakesMapped} mapped Bengaluru lakes appears in it`
+            lakeStats
+              ? `${Object.entries(lakeStats.byClass)
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([c, n]) => `${n} Class ${c}`)
+                  .join(', ')}${
+                  stats.lakesMapped === null
+                    ? ''
+                    : ` · ${lakeStats.withoutReading(stats.lakesMapped)} of ${stats.lakesMapped} mapped lakes untested`
+                }`
+              : 'Loading the July 2026 lakes report…'
           }
           tone="alert"
         />

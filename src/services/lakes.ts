@@ -12,6 +12,8 @@ import { DODDAGUBBI } from './doddagubbi';
 export interface Lake {
   /** OSM id, e.g. "way/12345". The featured lake reuses the Doddagubbi entity id. */
   id: string;
+  /** The original OpenStreetMap id, which keys the lake readings file. */
+  osmId: string;
   name: string;
   /** Centroid, used for pins, search and distance. */
   lat: number;
@@ -23,6 +25,17 @@ export interface Lake {
 }
 
 const LAKES_URL = '/data/all-lakes.geojson';
+
+/**
+ * Named water bodies in the OSM extract that are not lakes. Matched narrowly and by
+ * name because OSM tags them all `natural=water` with nothing to tell them apart:
+ * a hotel pool, a landfill leachate pond, quarry catchments, and two watercourses
+ * (thorai is a channel; the Vrishabhavati is a river).
+ */
+const NOT_A_LAKE_NAME = /swimming pool|^leachate pond$|quarry (catchment|water)|thorai$|^vrishabhavati$/i;
+
+/** OSM `water=` values that are not lakes. */
+const NOT_A_LAKE = new Set(['drain', 'ditch', 'canal', 'wastewater', 'catchment_area']);
 
 /** Treat an OSM lake this close to our Doddagubbi polygon as the same water body. */
 const FEATURED_MATCH_KM = 0.3;
@@ -54,13 +67,19 @@ export function parseLakes(json: { features?: RawFeature[] }): Lake[] {
     // Polygons only. The file also holds a couple of watercourse lines, which are
     // rivers rather than lakes and would otherwise be counted as water bodies.
     if (!f.geometry || !/^(Multi)?Polygon$/.test(f.geometry.type)) continue;
+    // OSM tags storm drains as natural=water too. The K100 drain alone is 11 polygons,
+    // and offering someone a drain as "a lake near you" discredits everything else.
+    if (NOT_A_LAKE.has(String(f.properties?.water ?? ''))) continue;
+    if (NOT_A_LAKE_NAME.test(String(f.properties?.name ?? ''))) continue;
     const name = typeof f.properties?.name === 'string' ? f.properties.name : '';
     if (!name) continue;
     const rings = ringsOf(f.geometry);
     const outer = rings[0];
     if (!outer || outer.length === 0) continue;
+    const osmId = String(f.properties?.['@id'] ?? `lake-${lakes.length}`);
     lakes.push({
-      id: String(f.properties?.['@id'] ?? `lake-${lakes.length}`),
+      id: osmId,
+      osmId,
       name,
       lat: outer.reduce((s, p) => s + p[0], 0) / outer.length,
       lng: outer.reduce((s, p) => s + p[1], 0) / outer.length,
@@ -75,6 +94,8 @@ export function parseLakes(json: { features?: RawFeature[] }): Lake[] {
     .sort((a, b) => a.km - b.km)[0];
   if (match && match.km <= FEATURED_MATCH_KM) {
     match.l.featured = true;
+    // The entity id changes so selection is shared with the dashboard, but osmId is
+    // left alone: it is what the readings file is keyed by.
     match.l.id = DODDAGUBBI.id;
   }
 
