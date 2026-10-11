@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import "./figma.css";
 import { APP_NAME, DEMO_CASE_PREFIX } from "../brand";
 import { DEMO_WATCHED_LAKES, DEMO_WATCHLIST_RISK, WATCHED_LAKES_LABEL } from "../demo/watchlist";
@@ -7,6 +7,8 @@ import { AUTHORITIES, addReport, readPhoto, useReports, type CitizenReport } fro
 import { complaintMailto } from "../services/complaint";
 import { daysSince, formatDay, todayISO } from "../utils/dates";
 import type { Lake } from "../services/lakes";
+import { useVoiceInput, VOICE_LANGS } from "../services/voiceInput";
+import { useGeotag, nearestLake, type LocationSource } from "../services/geotag";
 import { MiniMap } from "../components/Map/MiniMap";
 import { DEMO_LAKE_NAMES, SEEDED_CASES, seededAcknowledged, seededHighRisk } from "../demo/seededCases";
 
@@ -17,9 +19,17 @@ export interface Draft {
   note: string;
   photo: string | null;
   date: string;
+  /** Null until a device fix lands or the person types one in. */
+  lat: number | null;
+  lng: number | null;
+  accuracyM: number | null;
+  locationSource: LocationSource;
 }
 
-export const emptyDraft = (): Draft => ({ lake: null, issues: [], note: "", photo: null, date: todayISO() });
+export const emptyDraft = (): Draft => ({
+  lake: null, issues: [], note: "", photo: null, date: todayISO(),
+  lat: null, lng: null, accuracyM: null, locationSource: "lake",
+});
 
 /** Shown wherever a report is created or listed. There is no server behind any of it. */
 function PrototypeNote({ children }: { children?: ReactNode }) {
@@ -57,6 +67,7 @@ type IconName =
   | "search"
   | "filter"
   | "menu"
+  | "mic"
   | "close";
 
 const LAKE_IMAGE = "/images/lake.jpg";
@@ -83,6 +94,7 @@ function Icon({ name, className = "size-5" }: { name: IconName; className?: stri
     search: <><circle cx="11" cy="11" r="7" /><path d="m16 16 5 5" /></>,
     filter: <><path d="M4 6h16M7 12h10M10 18h4" /></>,
     menu: <><path d="M4 7h16M4 12h16M4 17h16" /></>,
+    mic: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6" /></>,
     close: <><path d="m6 6 12 12M18 6 6 18" /></>,
   };
   return <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
@@ -279,8 +291,36 @@ function LakePicker({ value, onPick }: { value: Lake | null; onPick: (l: Lake) =
 }
 
 function ReportScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen) => void; draft: Draft; setDraft: (d: Draft) => void }) {
+  const { lakes } = useData();
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const geo = useGeotag();
+  const appliedFix = useRef(false);
+
+  // Newest draft for callbacks that must not re-subscribe on every keystroke.
+  const liveDraft = useRef(draft);
+  liveDraft.current = draft;
+
+  const voice = useVoiceInput((phrase) => {
+    if (!phrase) return;
+    const current = liveDraft.current.note.trim();
+    setDraft({ ...liveDraft.current, note: current ? `${current} ${phrase}` : phrase });
+  });
+
+  // A usable device fix sets the coordinate, and suggests the lake if none is chosen yet.
+  useEffect(() => {
+    if (appliedFix.current || !geo.fix) return;
+    appliedFix.current = true;
+    const suggested = liveDraft.current.lake ?? nearestLake(geo.fix.lat, geo.fix.lng, lakes);
+    setDraft({
+      ...liveDraft.current,
+      lat: geo.fix.lat,
+      lng: geo.fix.lng,
+      accuracyM: geo.fix.accuracyM,
+      locationSource: geo.fix.source,
+      lake: suggested,
+    });
+  }, [geo.fix, lakes, setDraft]);
 
   const toggleIssue = (issue: string) => setDraft({
     ...draft,
@@ -300,6 +340,15 @@ function ReportScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen
     }
   };
 
+  const editCoord = (key: "lat" | "lng") => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value === "" ? null : Number(e.target.value);
+    setDraft({ ...draft, [key]: value, accuracyM: null, locationSource: "edited" });
+  };
+
+  // What the report will actually carry: the device fix if we have one, else the lake.
+  const effLat = draft.lat ?? draft.lake?.lat ?? null;
+  const effLng = draft.lng ?? draft.lake?.lng ?? null;
+  const approximate = draft.locationSource === "lake" || draft.lat === null;
   const ready = !!draft.lake && draft.issues.length > 0;
 
   return <MobileFrame active="report" navigate={navigate}>
@@ -319,6 +368,28 @@ function ReportScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen
       <div className="field-group"><label>Lake</label><LakePicker value={draft.lake} onPick={(l) => setDraft({ ...draft, lake: l })} /></div>
 
       <div className="field-group">
+        <div className="label-row">
+          <label htmlFor="coord-lat">Location</label>
+          {approximate
+            ? <span className="loc-tag approx">Approximate</span>
+            : <span className="loc-tag exact">{draft.accuracyM != null ? `± ${Math.round(draft.accuracyM)} m` : "Edited"}</span>}
+        </div>
+        {geo.status === "locating"
+          ? <div className="field compact">Finding your location…</div>
+          : <div className="coord-row">
+              <input id="coord-lat" className="field compact" type="number" step="0.00001" inputMode="decimal"
+                value={effLat ?? ""} onChange={editCoord("lat")} aria-label="Latitude" placeholder="Latitude" />
+              <input className="field compact" type="number" step="0.00001" inputMode="decimal"
+                value={effLng ?? ""} onChange={editCoord("lng")} aria-label="Longitude" placeholder="Longitude" />
+            </div>}
+        <p className="field-hint">
+          {geo.note ?? (approximate
+            ? "Taken from the lake you picked, not from your device."
+            : "From your device. Correct it if it is wrong.")}
+        </p>
+      </div>
+
+      <div className="field-group">
         <label>What did you see? <span>Choose all that apply</span></label>
         <div className="issue-grid">{issues.map((issue) => <button type="button" key={issue} className={draft.issues.includes(issue) ? "selected" : ""} onClick={() => toggleIssue(issue)}>{issue}</button>)}</div>
       </div>
@@ -329,8 +400,29 @@ function ReportScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen
       </div>
 
       <div className="field-group">
-        <label htmlFor="description">Description <span>Optional</span></label>
-        <textarea id="description" placeholder="Add a short note about what you saw" rows={3} value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} />
+        <div className="label-row">
+          <label htmlFor="description">Description <span>Optional</span></label>
+          {voice.supported && <div className="voice-langs" role="group" aria-label="Voice input language">
+            {VOICE_LANGS.map((l) => <button key={l.code} type="button" aria-pressed={voice.lang === l.code}
+              className={voice.lang === l.code ? "selected" : ""} onClick={() => voice.setLang(l.code)}>{l.label}</button>)}
+          </div>}
+        </div>
+        <div className="desc-wrap">
+          <textarea id="description" placeholder="Add a short note about what you saw" rows={3}
+            value={draft.note} onChange={(e) => setDraft({ ...draft, note: e.target.value })} />
+          {voice.supported && <button type="button"
+            className={`mic-btn ${voice.listening ? "listening" : ""}`}
+            aria-pressed={voice.listening}
+            aria-label={voice.listening ? "Stop voice input" : "Start voice input"}
+            onClick={() => (voice.listening ? voice.stop() : voice.start())}>
+            <Icon name="mic" />
+          </button>}
+        </div>
+        {voice.listening && <p className="voice-live" aria-live="polite">
+          <span className="voice-dot" />Listening{voice.interim ? ": " : "…"}<em>{voice.interim}</em>
+        </p>}
+        {voice.error && <p className="field-error">{voice.error}</p>}
+        {voice.supported && <p className="field-hint">Voice input — browser speech recognition. It gets words wrong; read the text before you submit.</p>}
       </div>
 
       <PrototypeNote />
@@ -349,8 +441,10 @@ function ReviewScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen
     const { warning: w } = addReport({
       lakeId: draft.lake.id,
       lakeName: draft.lake.name,
-      lat: draft.lake.lat,
-      lng: draft.lake.lng,
+      lat: draft.lat ?? draft.lake.lat,
+      lng: draft.lng ?? draft.lake.lng,
+      accuracyM: draft.accuracyM,
+      locationSource: draft.lat === null ? "lake" : draft.locationSource,
       issues: draft.issues,
       note: draft.note,
       photo: draft.photo,
@@ -375,6 +469,7 @@ function ReviewScreen({ navigate, draft, setDraft }: { navigate: (screen: Screen
           <div><dt>Lake</dt><dd>{draft.lake?.name ?? "Not chosen"}</dd></div>
           <div><dt>What you saw</dt><dd>{draft.issues.length ? draft.issues.join(", ") : "Not chosen"}</dd></div>
           <div><dt>Date observed</dt><dd>{formatDay(draft.date)}</dd></div>
+          <div><dt>Location</dt><dd>{(draft.lat ?? draft.lake?.lat)?.toFixed(5)}, {(draft.lng ?? draft.lake?.lng)?.toFixed(5)}{draft.lat === null || draft.locationSource === "lake" ? " (approximate — from the lake)" : draft.accuracyM != null ? ` (± ${Math.round(draft.accuracyM)} m)` : " (edited)"}</dd></div>
           {draft.note.trim() && <div><dt>Note</dt><dd>{draft.note.trim()}</dd></div>}
           <div><dt>Will be addressed to</dt><dd>{AUTHORITIES.join(", ")}</dd></div>
         </dl>

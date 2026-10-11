@@ -301,3 +301,36 @@ textarea, select { width: 100%; padding: .75rem; resize: vertical; color: var(--
 .mm-dot.lake { background: #64748b; }
 .mm-dot.stn { background: #0284c7; }
 .incident-date.demo { display: grid; place-items: center; color: var(--color-muted); font-size: .55rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+
+/* ── Voice input and geotag on the report screen ─────────────────────────────
+   Voice is the browser's own speech recognition; nothing here is a model we run. */
+.label-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-bottom: .3rem; }
+.label-row label { margin: 0; }
+.label-row label span { color: var(--color-muted); font-weight: 500; }
+
+.voice-langs { display: inline-flex; padding: .12rem; gap: .12rem; background: #f1f5f9; border-radius: .5rem; }
+.voice-langs button { padding: .22rem .55rem; border: 0; border-radius: .38rem; background: transparent; color: var(--color-muted); font-size: .68rem; font-weight: 650; }
+.voice-langs button.selected { background: #fff; color: var(--color-brand-dark); box-shadow: 0 1px 3px rgba(15,23,42,.12); }
+
+.desc-wrap { position: relative; }
+.desc-wrap textarea { padding-right: 3.1rem; }
+
+.mic-btn { position: absolute; right: .5rem; bottom: .5rem; width: 2.3rem; height: 2.3rem; display: grid; place-items: center; border: 1px solid var(--color-line); border-radius: 999px; background: #fff; color: var(--color-brand); }
+.mic-btn:hover { background: var(--color-brand-soft); }
+.mic-btn.listening { color: #fff; background: #dc2626; border-color: #dc2626; animation: mic-pulse 1.4s ease-in-out infinite; }
+@keyframes mic-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220,38,38,.45); } 50% { box-shadow: 0 0 0 .4rem rgba(220,38,38,0); } }
+@media (prefers-reduced-motion: reduce) { .mic-btn.listening { animation: none; } }
+
+.voice-live { margin: .45rem 0 0; display: flex; align-items: baseline; gap: .4rem; color: #b91c1c; font-size: .7rem; line-height: 1.4; }
+.voice-live em { font-style: normal; color: var(--color-ink); }
+.voice-dot { width: .45rem; height: .45rem; border-radius: 999px; background: #dc2626; flex-shrink: 0; align-self: center; animation: mic-pulse 1.4s ease-in-out infinite; }
+
+.field-hint { margin: .35rem 0 0; color: var(--color-muted); font-size: .64rem; line-height: 1.45; }
+
+.coord-row { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem; }
+.coord-row input { width: 100%; }
+
+/* No uppercase here: it would render the metre unit as '18 M'. */
+.loc-tag { padding: .14rem .4rem; border-radius: .35rem; font-size: .6rem; font-weight: 700; letter-spacing: .02em; }
+.loc-tag.approx { color: #b45309; background: #fffbeb; border: 1px solid #fde68a; }
+.loc-tag.exact { color: var(--color-brand-dark); background: var(--color-brand-soft); border: 1px solid #99f6e4; }

@@ -38,6 +38,11 @@ export function complaintBody(report: CitizenReport, locations: MonitoringLocati
     `Date: ${formatDay(new Date().toISOString().slice(0, 10))}`,
     '',
     `I am reporting a problem at ${report.lakeName}, Bengaluru (${report.lat.toFixed(5)}°N, ${report.lng.toFixed(5)}°E).`,
+    report.locationSource === 'device' && report.accuracyM != null
+      ? `The coordinate is from my device, accurate to about ${Math.round(report.accuracyM)} m.`
+      : report.locationSource === 'edited'
+        ? 'The coordinate was entered by hand.'
+        : 'The coordinate is the centre of the lake, not a reading from my device.',
     '',
     'What I observed:',
     `- Date observed: ${formatDay(report.date)}`,

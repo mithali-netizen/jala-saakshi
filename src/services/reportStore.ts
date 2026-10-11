@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { DEMO_CASE_PREFIX } from '../brand';
+import type { LocationSource } from './geotag';
 
 /**
  * Citizen reports made in this prototype.
@@ -24,6 +25,10 @@ export interface CitizenReport {
   photo: string | null;
   /** ISO date the report was made. */
   date: string;
+  /** Radius in metres of the device fix, or null when the lake set the location. */
+  accuracyM: number | null;
+  /** Whether the coordinate came from the device, the chosen lake, or a hand edit. */
+  locationSource: LocationSource;
   createdAt: string;
   status: ReportStatus;
   sentTo: string[];
@@ -77,6 +82,8 @@ export interface NewReport {
   note: string;
   photo: string | null;
   date: string;
+  accuracyM: number | null;
+  locationSource: LocationSource;
 }
 
 export function addReport(input: NewReport): { report: CitizenReport; warning: string | null } {
