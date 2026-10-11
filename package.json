@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "shoot:app": "node scripts/shoot-app.mjs",
+    "shoot:readme": "node scripts/shoot-readme.mjs",
     "match:lakes": "node scripts/match-lakes.mjs"
   },
   "dependencies": {
