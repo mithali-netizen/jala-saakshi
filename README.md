@@ -38,23 +38,13 @@
 
 It tackles acute urban freshwater crises—including recurring mass fish kills, foaming, and untreated domestic and industrial sewage inflow—by connecting **8 years of KSPCB chemical water quality monitoring records**, **Sentinel-2 multispectral satellite imagery**, and **citizen observation on the ground**. Lakeside residents and walkers can capture photo evidence and report observations through **native Kannada voice dictation** (`kn-IN`) or English. Using **Amazon Bedrock (Nova Lite)**, the system performs multimodal incident classification and automatically drafts evidence-backed complaint letters for regulatory agencies (BBMP, KSPCB), feeding into an authority portal backed by a strict **7-day response clock**.
 
-<a id="tech-stack--technologies-used"></a>
-### 🏷️ Tech Stack & Tags
 
-| Layer / Category | Technologies & AWS Services |
-| :--- | :--- |
-| **AWS Cloud & Serverless** | `AWS Amplify Hosting` · `Amazon CloudFront` · `Amazon Bedrock (Nova Lite v1)` · `AWS Lambda (Python 3.12)` · `Amazon API Gateway (v2)` · `AWS SAM` · `Amazon CloudWatch` · `AWS Open Data Registry (Sentinel-2 COGs)` |
-| **Frontend & UI** | `React 19` · `TypeScript` · `Vite` · `Tailwind CSS v4` · `Lucide Icons` |
-| **Geospatial & Visualization** | `Leaflet` · `React-Leaflet` · `Leaflet.markercluster` · `Recharts` · `OpenStreetMap Overpass API` · `GeoJSON` |
-| **Backend, Data & Testing** | `Python 3.12` · `pdfplumber` (KSPCB PDF pipeline) · `Pytest` · `Web Speech API` (Kannada & Indian English STT) · `oxlint` |
 
 ---
 
-<a id="table-of-contents"></a>
 ## 📑 Table of Contents
 
 - [📌 About Jala Saakshi](#-about-jala-saakshi)
-  - [🏷️ Tech Stack & Tags](#️-tech-stack--tags)
 - [🌊 The Story: Why We Built Jala Saakshi](#-the-story-why-we-built-jala-saakshi)
   - [The Breaking Point: Doddagubbi Lake](#the-breaking-point-doddagubbi-lake)
 - [🚨 The Problem Statement & Environmental Crisis](#-the-problem-statement--environmental-crisis)
