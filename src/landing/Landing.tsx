@@ -129,6 +129,30 @@ function ScaledFrame({ src, w, h, title }: { src: string; w: number; h: number; 
   );
 }
 
+/** Language the app stills are shown in. Both are captured by scripts/shoot-app.mjs. */
+type ShotLang = 'kn' | 'en';
+
+/**
+ * A captured app screen rather than a live iframe: three phones each running the real app
+ * was three map loads on a marketing page. Every still is 390x844 at 3x, so the width and
+ * height below are fixed and swapping language cannot shift the layout.
+ *
+ * Re-run `npm run shoot:app` after changing the app, or these go stale.
+ */
+function AppShot({ slug, lang, alt }: { slug: string; lang: ShotLang; alt: string }) {
+  return (
+    <img
+      src={`/images/app/${slug}-${lang}.png`}
+      alt={alt}
+      width={1170}
+      height={2532}
+      loading="lazy"
+      decoding="async"
+      className="block h-auto w-full"
+    />
+  );
+}
+
 function Laptop({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
     <div className={`device-float ${className}`}>
@@ -349,6 +373,8 @@ export default function Landing() {
   const ready = !isLoading && !error && locations.length > 0;
   const mapApi = useRef<{ karnataka: () => void; bengaluru: () => void } | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  /** Which language the three app stills are shown in. One toggle swaps all three. */
+  const [shotLang, setShotLang] = useState<ShotLang>('kn');
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -663,12 +689,43 @@ export default function Landing() {
               </p>
             </Reveal>
 
+            <Reveal delay={80}>
+              <div className="mt-8 flex items-center gap-3">
+                <span className="text-sm font-medium text-slate-600">Show these screens in</span>
+                <div
+                  role="group"
+                  aria-label="Language of the app screens"
+                  className="inline-flex rounded-full border border-slate-300 bg-white p-1"
+                >
+                  {([
+                    { code: 'kn' as const, label: 'ಕನ್ನಡ' },
+                    { code: 'en' as const, label: 'English' },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.code}
+                      type="button"
+                      aria-pressed={shotLang === opt.code}
+                      onClick={() => setShotLang(opt.code)}
+                      className={`rounded-full px-4 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700 ${
+                        shotLang === opt.code
+                          ? 'bg-teal-700 text-white'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+
             <div className="mt-14 flex flex-wrap items-end justify-center gap-8 lg:flex-nowrap lg:gap-10">
               <Reveal delay={0} className="w-[240px] shrink-0 lg:w-[270px]">
                 <div className="lg:translate-y-6 lg:-rotate-[7deg]">
                   <a href="#/app" className="block no-underline" aria-label="Open the app home screen">
                     <Phone>
-                      <ScaledFrame src="/#/app" w={390} h={844} title="App home screen" />
+                      <AppShot slug="app" lang={shotLang}
+                        alt={`The app home screen, in ${shotLang === 'kn' ? 'Kannada' : 'English'}`} />
                     </Phone>
                   </a>
                 </div>
@@ -678,19 +735,21 @@ export default function Landing() {
                 <div className="lg:-translate-y-4">
                   <a href="#/app/report" className="block no-underline" aria-label="Start a report">
                     <Phone>
-                      <ScaledFrame src="/#/app/report" w={390} h={844} title="App report screen" />
+                      <AppShot slug="app-report" lang={shotLang}
+                        alt={`The report screen, with a photo, a lake, a location and what was seen, in ${shotLang === 'kn' ? 'Kannada' : 'English'}`} />
                     </Phone>
                   </a>
                 </div>
                 <p className="font-display mt-4 text-center text-base font-bold text-slate-900 lg:-translate-y-4">
-                  Report · ಕನ್ನಡ / English
+                  Report
                 </p>
               </Reveal>
               <Reveal delay={240} className="w-[240px] shrink-0 lg:w-[270px]">
                 <div className="lg:translate-y-6 lg:rotate-[7deg]">
                   <a href="#/app/map" className="block no-underline" aria-label="Open the app map">
                     <Phone>
-                      <ScaledFrame src="/#/app/map" w={390} h={844} title="App map screen" />
+                      <AppShot slug="app-map" lang={shotLang}
+                        alt={`The map screen, showing Bengaluru lakes mapped from OpenStreetMap, in ${shotLang === 'kn' ? 'Kannada' : 'English'}`} />
                     </Phone>
                   </a>
                 </div>
