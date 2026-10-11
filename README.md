@@ -344,6 +344,28 @@ sam build
 sam deploy --guided
 ```
 
+### 6. Repository layout
+```
+.
+├── index.html, vite.config.ts, tsconfig.json   Vite / TypeScript entry points (tools look for these at the root)
+├── package.json, .nvmrc, .oxlintrc.json        Node version and lint config
+├── amplify.yml                                 AWS Amplify build (must stay at the root)
+├── config/                                     TypeScript project configs (app and node)
+├── src/                                        The web app: landing, dashboard, near-me, citizen app, authority portal
+├── public/                                     Static assets and datasets served as-is (public/data/*.json)
+├── backend/                                    Lambda handlers, SAM template, pytest.ini and tests
+├── pipeline/                                   KSPCB PDF extraction (final-ext.py)
+├── data/                                       Source PDFs and extracted CSV
+├── scripts/                                    Lake matching and screenshot automation (npm run match:lakes, shoot:app)
+├── docs/                                       Screenshots, AWS notes, source material
+└── figma/                                      Figma Make prototype sandbox (separate app)
+```
+
+To rerun the extraction from the repo root:
+```bash
+python3 pipeline/final-ext.py data/*.pdf --out data/readings3.csv
+```
+
 ---
 
 ## 👩‍💻 Project Team & Attributions
