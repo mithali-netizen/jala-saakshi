@@ -372,7 +372,7 @@ python3 pipeline/final-ext.py data/*.pdf --out data/readings3.csv
 
 Created with ❤️ for Bengaluru's lakes by:
 - **Sreeya Chand** — Frontend Architecture, Geospatial Visualizations & Story Design
-- **Mithali Netizen** — Data Pipeline Engineering, KSPCB PDF Extraction & Spatial Matching
+- **Mithali** — Data Pipeline Engineering, KSPCB PDF Extraction & Spatial Matching
 - **Prapti** — Backend SAM Architecture, Bedrock Prompt Engineering & UX Design
 
 ### Official Data Citations
