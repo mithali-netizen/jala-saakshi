@@ -113,11 +113,25 @@ This was not an anomaly:
 ### The Core Problem Statement
 > **How can ordinary citizens witness and document what is happening to their local water bodies, translate technical chemical data into actionable evidence, and hold responsible civic authorities accountable?**
 
-### The Ecological Impact (general background, not specific to any one lake)
-1. **Severe Dissolved Oxygen Depletion:** Untreated domestic sewage contains high organic loads. As aerobic bacteria decompose the organic matter, they consume all available dissolved oxygen (DO), driving levels below 2.0 mg/L (normal aquatic life requires > 4.0 mg/L), resulting in mass fish asphyxiation.
-2. **Surface Froth:** Detergent surfactants are a commonly cited cause of froth on urban lakes, and froth has been reported historically at Bellandur and Varthur.
-3. **Coliform Counts:** Coliform bacteria are the Board's indicator of faecal contamination. In the July 2026 report, **63 of the 131 lakes** record total coliform above 5,000 MPN/100 ml, the Class C limit, and the highest is 330,000.
-4. **Information Asymmetry & Language Barrier:** Official water quality reports are published as scanned PDFs with merged table cells and technical terminology. We built a Kannada-first reporting flow so residents can report what they see in the language they use at the lake.
+<table>
+  <tr>
+    <td width="50%" align="center">
+      <img src="https://github.com/user-attachments/assets/fcef0e77-265a-40cb-9347-17b054c4130f" alt="Dense white chemical foam covering the surface of an urban Bengaluru lake" width="100%" />
+      <br /><sub><b>Surface froth on an urban Bengaluru lake.</b><br />Photo: [credit / source]</sub>
+    </td>
+    <td width="50%" align="center">
+      <img src="https://github.com/user-attachments/assets/cceedfdb-15a3-4411-a5bc-f4a40c9ffd98" alt="Dead fish washed up along a polluted lake shoreline" width="100%" />
+      <br /><sub><b>Mass fish kill along a polluted shoreline.</b><br />Photo: [credit / source]</sub>
+    </td>
+  </tr>
+</table>
+
+### The Ecological Impact *(general background, not specific to any one lake)*
+
+1. **Severe dissolved oxygen depletion:** Untreated domestic sewage carries a high organic load. As aerobic bacteria break it down, they consume the available dissolved oxygen (DO). When DO falls below 2.0 mg/L (normal aquatic life needs more than 4.0 mg/L), fish suffocate in large numbers.
+2. **Surface froth:** Detergent surfactants are a commonly cited cause of froth on urban lakes. Froth has been reported historically at Bellandur and Varthur.
+3. **Coliform counts:** Coliform bacteria are the Board's indicator of faecal contamination. In the July 2026 report, **63 of the 131 lakes** record total coliform above 5,000 MPN/100 ml, the Class C limit, and the highest is 330,000.
+4. **Information asymmetry and language barrier:** Official water-quality reports are published as dense PDF tables with merged cells and technical terminology. We built a Kannada and English reporting flow so residents can report what they see in the language they use at the lake.
 
 ---
 
