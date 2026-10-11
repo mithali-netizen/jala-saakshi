@@ -24,8 +24,9 @@
 </p>
 
 > **AWS Environmental Hackathon Submission**  
-> **Team:** Sreeya Chand, Mithali Netizen, Prapti  
-> **Live Demo:** deployed with AWS Amplify and CloudFront (URL to be added)  
+> **Team:** Sreeya Chand, Mithali, Prapti  
+> **Live Demo:** deployed with AWS Amplify and CloudFront
+> ([URL](https://main.d2thm01d3n4ybm.amplifyapp.com/)) 
 > *"How do people see what's happening to the water around them, and hold someone to it?"*
 
 ---
@@ -424,9 +425,9 @@ python3 pipeline/final-ext.py data/*.pdf --out data/readings3.csv
 ## 👩‍💻 Project Team & Attributions
 
 Created with ❤️ for Bengaluru's lakes by:
-- **Sreeya Chand** — Frontend Architecture, Geospatial Visualizations & Story Design
+- **Sreeya Chand** — Backend Architecture, Geospatial Visualizations & Story Design
 - **Mithali** — Data Pipeline Engineering, KSPCB PDF Extraction & Spatial Matching
-- **Prapti** — Backend SAM Architecture, Bedrock Prompt Engineering & UX Design
+- **Prapti** — App development, Bedrock Prompt Engineering & UX Design
 
 ### Official Data Citations
 - **Water Quality Data:** Karnataka State Pollution Control Board (KSPCB) Monthly Monitoring Reports (2018–2026).
