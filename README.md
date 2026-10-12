@@ -117,11 +117,11 @@ This was not an anomaly:
   <tr>
     <td width="50%" align="center">
       <img src="https://github.com/user-attachments/assets/fcef0e77-265a-40cb-9347-17b054c4130f" alt="Dense white chemical foam covering the surface of an urban Bengaluru lake" width="100%" />
-      <br /><sub><b>Surface froth on an urban Bengaluru lake.</b><br />Photo: [credit / source]</sub>
+      <br /><sub><b>Surface froth on an urban Bengaluru lake.</b></sub>
     </td>
     <td width="50%" align="center">
       <img src="https://github.com/user-attachments/assets/cceedfdb-15a3-4411-a5bc-f4a40c9ffd98" alt="Dead fish washed up along a polluted lake shoreline" width="100%" />
-      <br /><sub><b>Mass fish kill along a polluted shoreline.</b><br />Photo: [credit / source]</sub>
+      <br /><sub><b>Mass fish kill along a polluted shoreline.</b></sub>
     </td>
   </tr>
 </table>
